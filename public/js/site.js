@@ -59,6 +59,24 @@ if (slider) {
   start();
 }
 
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const benefitItems = document.querySelectorAll(".benefits li");
+if (!benefitItems.length || reduceMotion || !("IntersectionObserver" in window)) {
+  benefitItems.forEach((item) => item.classList.add("is-in"));
+} else {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-in");
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.35 });
+  benefitItems.forEach((item, itemIndex) => {
+    item.style.setProperty("--delay", `${itemIndex * 60}ms`);
+    observer.observe(item);
+  });
+}
+
 document.querySelectorAll("form[data-confirm]").forEach((form) => {
   form.addEventListener("submit", (event) => {
     const message = form.getAttribute("data-confirm");
