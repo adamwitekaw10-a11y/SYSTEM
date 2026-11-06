@@ -219,14 +219,16 @@ p { margin: 0 0 1rem; }
 .hero { position: relative; background: #2a161c; }
 
 .slide {
-  min-height: 30rem;
   display: grid;
+  min-height: max(38rem, calc(100svh - 11rem));
 }
 
 .slide img {
   width: 100%;
-  height: 30rem;
+  height: 100%;
+  min-height: max(38rem, calc(100svh - 11rem));
   object-fit: cover;
+  object-position: center 35%;
   grid-area: 1 / 1;
 }
 
@@ -504,7 +506,10 @@ input {
   .slider-tabs { grid-template-columns: 1fr 1fr; }
 
   .slide,
-  .slide img { min-height: 24rem; height: 24rem; }
+  .slide img {
+    min-height: max(28rem, calc(100svh - 15rem));
+    height: auto;
+  }
 
   .editor-row form + form { margin-top: 0.6rem; }
 }
