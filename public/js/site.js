@@ -11,8 +11,8 @@ if (toggle && nav) {
 
 const slider = document.querySelector("[data-slider]");
 if (slider) {
-  const slides = [...slider.querySelectorAll(".slide")];
-  const tabs = [...slider.querySelectorAll(".slider-tab")];
+  const slides = [...slider.querySelectorAll(".banner-slide")];
+  const tabs = [...slider.querySelectorAll(".banner-tab")];
   let index = 0;
   let timer = 0;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
