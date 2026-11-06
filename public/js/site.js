@@ -60,9 +60,9 @@ if (slider) {
 }
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const revealItems = document.querySelectorAll(".benefits li, .pillar, .trust-inner p, .service-card");
-if (!revealItems.length || reduceMotion || !("IntersectionObserver" in window)) {
-  revealItems.forEach((item) => item.classList.add("is-in"));
+const benefitItems = document.querySelectorAll(".benefits li");
+if (!benefitItems.length || reduceMotion || !("IntersectionObserver" in window)) {
+  benefitItems.forEach((item) => item.classList.add("is-in"));
 } else {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
@@ -70,9 +70,9 @@ if (!revealItems.length || reduceMotion || !("IntersectionObserver" in window)) 
       entry.target.classList.add("is-in");
       observer.unobserve(entry.target);
     });
-  }, { threshold: 0.2 });
-  revealItems.forEach((item, itemIndex) => {
-    item.style.setProperty("--delay", `${(itemIndex % 6) * 55}ms`);
+  }, { threshold: 0.35 });
+  benefitItems.forEach((item, itemIndex) => {
+    item.style.setProperty("--delay", `${itemIndex * 60}ms`);
     observer.observe(item);
   });
 }
