@@ -60,7 +60,7 @@ test("strony publiczne, cennik i edycja po zalogowaniu", async (t) => {
   });
 
   const pages = [
-    ["/", "Doświadczenie", "530 770 208", "logo_small.jpg", "Kompleksowa księgowość", "hero-office.jpg"],
+    ["/", "Doświadczenie", "530 770 208", "logo_small.jpg", "Kompleksowa księgowość", "hero-office.jpg", "nie ma „haczyków”"],
     ["/o-firmie", "licencji Ministerstwa Finansów nr 61564/2013", "office-1209640_1920.jpg"],
     ["/oferta", "Księgi Handlowe", "60,00 zł", "Kadry i płace"],
     ["/cennik", "Podatkowa Księga Przychodów i Rozchodów", "od 200 zł", "kwotami netto"],
@@ -82,8 +82,10 @@ test("strony publiczne, cennik i edycja po zalogowaniu", async (t) => {
     if (route === "/") {
       assert.match(html, /Poznaj ofertę[\s\S]*href="\/oferta"|href="\/oferta"[\s\S]*Poznaj ofertę/);
       assert.match(html, /href="\/oferta#ksiegowosc"/);
-      assert.match(html, /Bezpieczeństwo/);
-      assert.match(html, /Indywidualne podejście/);
+      assert.match(html, /Indywidualny doradca/);
+      assert.match(html, /Wsparcie/);
+      assert.match(html, /Profesjonalizm/);
+      assert.match(html, /ZYSKUJESZ/);
       assert.equal(html.includes("data-slider"), false);
     }
     assert.equal(html.includes(PASSWORD), false);
