@@ -60,7 +60,7 @@ test("strony publiczne, cennik i edycja po zalogowaniu", async (t) => {
   });
 
   const pages = [
-    ["/", "Doświadczenie", "530 770 208", "logo_small.jpg", "nie ma „haczyków”"],
+    ["/", "Doświadczenie", "530 770 208", "logo_small.jpg", "Kompleksowa księgowość", "hero-office.jpg"],
     ["/o-firmie", "licencji Ministerstwa Finansów nr 61564/2013", "office-1209640_1920.jpg"],
     ["/oferta", "Księgi Handlowe", "60,00 zł", "Kadry i płace"],
     ["/cennik", "Podatkowa Księga Przychodów i Rozchodów", "od 200 zł", "kwotami netto"],
@@ -80,9 +80,11 @@ test("strony publiczne, cennik i edycja po zalogowaniu", async (t) => {
     const html = await bodyOf(response);
     for (const needle of needles) assert.ok(html.includes(needle), `${route} brak: ${needle}`);
     if (route === "/") {
-      assert.match(html, /Indywidualny doradca[\s\S]*href="\/indywidualny-doradca"/);
-      assert.match(html, /Wsparcie[\s\S]*href="\/wsparcie"/);
-      assert.match(html, /Profesjonalizm[\s\S]*href="\/profesjonalizm"/);
+      assert.match(html, /Poznaj ofertę[\s\S]*href="\/oferta"|href="\/oferta"[\s\S]*Poznaj ofertę/);
+      assert.match(html, /href="\/oferta#ksiegowosc"/);
+      assert.match(html, /Bezpieczeństwo/);
+      assert.match(html, /Indywidualne podejście/);
+      assert.equal(html.includes("data-slider"), false);
     }
     assert.equal(html.includes(PASSWORD), false);
     assert.equal(html.includes("dev-only-change-me"), false);
