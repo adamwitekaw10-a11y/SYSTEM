@@ -10,7 +10,7 @@ if (toggle && nav) {
 }
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const revealItems = document.querySelectorAll(".offer-card, .highlight");
+const revealItems = document.querySelectorAll(".offer-card, .highlights .highlight");
 if (!revealItems.length || reduceMotion || !("IntersectionObserver" in window)) {
   revealItems.forEach((item) => item.classList.add("is-in"));
 } else {
@@ -20,10 +20,17 @@ if (!revealItems.length || reduceMotion || !("IntersectionObserver" in window)) 
       entry.target.classList.add("is-in");
       observer.unobserve(entry.target);
     });
-  }, { threshold: 0.2 });
+  }, { threshold: 0.15, rootMargin: "0px 0px 20% 0px" });
   revealItems.forEach((item, itemIndex) => {
     item.style.setProperty("--delay", `${(itemIndex % 4) * 70}ms`);
     observer.observe(item);
+  });
+  // Ensure below-the-fold items become visible even without scroll (print, full captures).
+  requestAnimationFrame(() => {
+    revealItems.forEach((item) => {
+      const rect = item.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 1.15) item.classList.add("is-in");
+    });
   });
 }
 
