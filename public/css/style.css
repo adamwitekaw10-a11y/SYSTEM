@@ -188,12 +188,18 @@ p { margin: 0 0 1rem; }
 }
 
 .site-header {
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.97);
   border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
   z-index: 10;
   backdrop-filter: blur(8px);
+  transition: box-shadow 250ms ease, border-color 250ms ease;
+}
+
+.site-header.is-scrolled {
+  box-shadow: 0 10px 28px rgba(53, 11, 27, 0.08);
+  border-bottom-color: rgba(229, 216, 204, 0.7);
 }
 
 .header-inner {
@@ -202,6 +208,11 @@ p { margin: 0 0 1rem; }
   gap: 1.5rem;
   min-height: 78px;
   padding: 0;
+  transition: min-height 250ms ease;
+}
+
+.site-header.is-scrolled .header-inner {
+  min-height: 70px;
 }
 
 .brand {
@@ -215,6 +226,11 @@ p { margin: 0 0 1rem; }
   width: auto;
   height: 62px;
   object-fit: contain;
+  transition: height 250ms ease;
+}
+
+.site-header.is-scrolled .brand img {
+  height: 56px;
 }
 
 .nav {
@@ -228,21 +244,44 @@ p { margin: 0 0 1rem; }
 
 .nav > a,
 .nav-parent {
+  position: relative;
   color: var(--ink);
   text-decoration: none;
   padding: 0.35rem 0;
   font-weight: 500;
   font-size: 15px;
-  transition: color 0.2s ease;
+  transition: color 250ms ease;
+}
+
+.nav > a::after,
+.nav-parent::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--brand-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 250ms ease;
 }
 
 .nav > a:hover,
 .nav-parent:hover { color: var(--brand-accent); }
 
+.nav > a:hover::after,
+.nav-parent:hover::after,
+.nav > a[aria-current="page"]::after,
+.nav-parent[aria-current="page"]::after,
+.nav > a:focus-visible::after,
+.nav-parent:focus-visible::after {
+  transform: scaleX(1);
+}
+
 .nav > a[aria-current="page"],
 .nav-parent[aria-current="page"] {
   color: var(--brand);
-  box-shadow: inset 0 -2px 0 var(--brand-accent);
 }
 
 .nav-item {
@@ -365,7 +404,12 @@ p { margin: 0 0 1rem; }
   justify-content: center;
   font-weight: 600;
   letter-spacing: 0.01em;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition:
+    background 250ms ease,
+    color 250ms ease,
+    border-color 250ms ease,
+    transform 250ms ease,
+    box-shadow 250ms ease;
 }
 
 .button,
@@ -373,6 +417,7 @@ p { margin: 0 0 1rem; }
 .editor button {
   background: var(--brand-accent);
   color: white;
+  box-shadow: 0 8px 20px rgba(53, 11, 27, 0.12);
 }
 
 .button:hover,
@@ -380,6 +425,26 @@ p { margin: 0 0 1rem; }
 .editor button:hover {
   background: var(--brand);
   color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(53, 11, 27, 0.18);
+}
+
+.button span[aria-hidden="true"] {
+  display: inline-block;
+  transition: transform 250ms ease;
+}
+
+.button:hover span[aria-hidden="true"] {
+  transform: translateX(4px);
+}
+
+.button:focus-visible,
+.nav > a:focus-visible,
+.nav-parent:focus-visible,
+.offer-tile:focus-visible,
+.nav-toggle:focus-visible {
+  outline: 2px solid var(--brand-accent);
+  outline-offset: 3px;
 }
 
 .button-ghost {
@@ -424,13 +489,14 @@ p { margin: 0 0 1rem; }
 
 @media (prefers-reduced-motion: no-preference) {
   .js .hero-photo {
-    transform: scale(1.03);
-    animation: hero-zoom 18s ease-out forwards;
+    transform: scale(1);
+    animation: hero-zoom 12s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 }
 
 @keyframes hero-zoom {
-  to { transform: scale(1); }
+  from { transform: scale(1); }
+  to { transform: scale(1.04); }
 }
 
 .hero-shade {
@@ -536,6 +602,7 @@ p { margin: 0 0 1rem; }
 .button-line:hover {
   background: white;
   color: var(--brand-dark);
+  transform: translateY(-2px);
 }
 
 .btn-phone {
@@ -553,24 +620,29 @@ p { margin: 0 0 1rem; }
   transition: transform 0.16s ease;
 }
 
-.js .hero-copy {
+.js .hero-title-top,
+.js .hero-title-accent,
+.js .hero-actions {
   opacity: 0;
-  transform: translateY(0.8rem);
-  animation: hero-in 0.8s ease forwards;
+  transform: translateY(20px);
+  animation: hero-line 650ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.js .hero-actions { animation-delay: 0.12s; }
+.js .hero-title-accent { animation-delay: 120ms; }
 
-@keyframes hero-in {
+.js .hero-actions { animation-delay: 270ms; }
+
+@keyframes hero-line {
   to { opacity: 1; transform: none; }
 }
 
 .offer-section {
   position: relative;
   z-index: 4;
-  margin-top: -2.2rem;
+  margin-top: -1.4rem;
   padding: 3.6rem 0 3.8rem;
-  background: linear-gradient(180deg, transparent 0 3.2rem, #f7f4f1 3.2rem);
+  background: linear-gradient(180deg, transparent 0 1.4rem, #f7f4f1 1.4rem);
+  border-radius: 1.25rem 1.25rem 0 0;
 }
 
 .offer-layout {
@@ -629,18 +701,48 @@ p { margin: 0 0 1rem; }
   min-width: 0;
 }
 
+.js .reveal-title,
+.js .reveal-copy,
+.js .reveal-media,
+.js .reveal-card,
 .js .offer-card,
 .js .highlights .highlight {
   opacity: 0;
-  transform: translateY(0.7rem);
+  transform: translateY(22px);
+  will-change: opacity, transform;
 }
 
+.js .reveal-copy { transform: translateY(12px); }
+
+.js .reveal-media {
+  transform: scale(1.025);
+  transform-origin: center;
+}
+
+.js .offer-card,
+.js .highlights .highlight,
+.js .reveal-card {
+  transform: translateY(20px);
+}
+
+.js .reveal-title.is-in,
+.js .reveal-copy.is-in,
+.js .reveal-media.is-in,
+.js .reveal-card.is-in,
 .js .offer-card.is-in,
 .js .highlights .highlight.is-in {
   opacity: 1;
   transform: none;
-  transition: opacity 0.55s ease var(--delay, 0ms), transform 0.55s ease var(--delay, 0ms);
+  transition:
+    opacity var(--reveal-ms, 650ms) cubic-bezier(0.22, 1, 0.36, 1) var(--delay, 0ms),
+    transform var(--reveal-ms, 650ms) cubic-bezier(0.22, 1, 0.36, 1) var(--delay, 0ms);
 }
+
+.js .reveal-copy.is-in { --reveal-ms: 550ms; }
+.js .reveal-media.is-in { --reveal-ms: 800ms; }
+.js .offer-card.is-in,
+.js .highlights .highlight.is-in,
+.js .reveal-card.is-in { --reveal-ms: 550ms; }
 
 .offer-card {
   display: flex;
@@ -655,14 +757,14 @@ p { margin: 0 0 1rem; }
   border: 0;
   border-radius: 1.15rem;
   box-shadow: 0 16px 40px rgba(53, 11, 27, 0.12);
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  transition: transform 250ms ease, box-shadow 250ms ease, color 250ms ease;
 }
 
 .offer-card:hover,
 .js .offer-card.is-in:hover {
-  transform: translateY(-4px);
+  transform: translateY(-5px);
   color: var(--brand);
-  box-shadow: 0 22px 44px rgba(53, 11, 27, 0.16);
+  box-shadow: 0 24px 48px rgba(53, 11, 27, 0.18);
 }
 
 .offer-icon {
@@ -671,6 +773,12 @@ p { margin: 0 0 1rem; }
   width: 3.6rem;
   height: 3.6rem;
   color: #601a24;
+  transition: transform 250ms ease;
+}
+
+.offer-card:hover .offer-icon,
+.js .offer-card.is-in:hover .offer-icon {
+  transform: translateY(-2px);
 }
 
 .offer-icon svg {
@@ -703,7 +811,7 @@ p { margin: 0 0 1rem; }
   background: var(--brand-accent);
   color: #fff;
   line-height: 0;
-  transition: transform 0.22s ease, background 0.22s ease;
+  transition: transform 250ms ease, background 250ms ease;
 }
 
 .offer-arrow svg {
@@ -717,8 +825,9 @@ p { margin: 0 0 1rem; }
   stroke-linejoin: round;
 }
 
-.offer-card:hover .offer-arrow {
-  transform: translateX(3px);
+.offer-card:hover .offer-arrow,
+.js .offer-card.is-in:hover .offer-arrow {
+  transform: scale(1.06);
   background: var(--brand);
 }
 
@@ -1370,6 +1479,7 @@ input {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 1;
   background:
     linear-gradient(180deg, rgba(58, 15, 29, 0.12), rgba(58, 15, 29, 0.46)),
     linear-gradient(90deg, rgba(122, 28, 52, 0.16), transparent 60%);
@@ -1383,6 +1493,9 @@ input {
   object-fit: cover;
   object-position: center top;
   filter: saturate(0.9) contrast(1.04);
+  will-change: transform;
+  transform: scale(1.08);
+  transition: none;
 }
 
 .benefits-content {
@@ -1423,6 +1536,18 @@ input {
   border: 1px solid #eadfd4;
   border-radius: 1.05rem;
   box-shadow: 0 10px 28px rgba(53, 11, 27, 0.05);
+  transition:
+    transform 220ms ease,
+    background 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.benefit-card:hover {
+  transform: translateY(-3px);
+  background: #fffcfa;
+  border-color: #dfcfc0;
+  box-shadow: 0 14px 32px rgba(53, 11, 27, 0.08);
 }
 
 .benefit-icon {
@@ -1432,6 +1557,11 @@ input {
   width: 2.15rem;
   height: 2.15rem;
   color: var(--brand-accent);
+  transition: transform 220ms ease;
+}
+
+.benefit-card:hover .benefit-icon {
+  transform: scale(1.05);
 }
 
 .benefit-icon svg {
@@ -1458,7 +1588,21 @@ input {
   border-top: 1px solid rgba(234, 215, 193, 0.12);
 }
 
-.site-footer a { color: #f6ece8; }
+.site-footer a {
+  color: #f6ece8;
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0 1px;
+  transition: background-size 220ms ease, color 220ms ease;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible {
+  background-size: 100% 1px;
+  color: #fff;
+}
 
 .footer-inner {
   display: grid;
@@ -1747,18 +1891,61 @@ input {
   .hero-title > span { white-space: normal; }
 }
 
+@media (max-width: 900px) {
+  .js .reveal-title.is-in,
+  .js .reveal-copy.is-in,
+  .js .reveal-media.is-in,
+  .js .reveal-card.is-in,
+  .js .offer-card.is-in,
+  .js .highlights .highlight.is-in {
+    --reveal-ms: 400ms;
+  }
+
+  .benefits-media img {
+    transform: none;
+    will-change: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 
-  .js .hero-copy,
+  .js .hero-photo,
+  .js .hero-title-top,
+  .js .hero-title-accent,
+  .js .hero-actions,
+  .js .reveal-title,
+  .js .reveal-copy,
+  .js .reveal-media,
+  .js .reveal-card,
   .js .offer-card,
   .js .highlight {
-    opacity: 1;
-    transform: none;
-    animation: none;
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .benefits-media img {
+    transform: none !important;
+    will-change: auto;
   }
 
   .offer-card,
   .offer-arrow,
-  .button { transition: none; }
+  .offer-icon,
+  .benefit-card,
+  .benefit-icon,
+  .button,
+  .site-header,
+  .header-inner,
+  .brand img,
+  .site-footer a { transition: none !important; }
+
+  .button:hover,
+  .benefit-card:hover,
+  .offer-card:hover,
+  .js .offer-card.is-in:hover {
+    transform: none !important;
+  }
 }
