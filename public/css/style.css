@@ -960,7 +960,7 @@ p { margin: 0 0 1rem; }
 
 .offer-block-media {
   margin: 0 0 1rem;
-  height: clamp(12rem, 22vw, 15.5rem);
+  height: clamp(18rem, 36vw, 26rem);
   border-radius: 0.85rem;
 }
 
@@ -989,12 +989,8 @@ p { margin: 0 0 1rem; }
 
 .offer-block-media--desk img { object-position: center 55%; }
 
-.offer-block-media--people {
-  height: clamp(18rem, 36vw, 26rem);
-}
-
 .offer-block-media--people img {
-  object-position: 70% 48%;
+  object-position: 70% 32%;
 }
 
 .offer-block-media--docs img { object-position: center 48%; }
@@ -1533,10 +1529,6 @@ input {
   }
 
   .offer-block-media {
-    height: 12rem;
-  }
-
-  .offer-block-media--people {
     height: min(78vw, 24rem);
   }
 
