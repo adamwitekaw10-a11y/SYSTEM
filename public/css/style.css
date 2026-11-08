@@ -903,25 +903,24 @@ p { margin: 0 0 1rem; }
   font-size: clamp(2.2rem, 4.4vw, 3.2rem);
 }
 
-.about-layout {
+.page-split {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(14rem, 0.85fr);
   gap: clamp(1.3rem, 2.8vw, 2.2rem);
   align-items: start;
 }
 
-.about-copy p {
+.page-copy p {
   color: var(--muted);
   font-size: 1.02rem;
   line-height: 1.7;
-  max-width: 42rem;
 }
 
-.about-copy .hero-actions {
+.page-copy .hero-actions {
   margin: 1.5rem 0 0;
 }
 
-.about-media {
+.page-side-media {
   position: sticky;
   top: 6.5rem;
   margin: 0;
@@ -930,15 +929,56 @@ p { margin: 0 0 1rem; }
   background: #3a0f1d;
   box-shadow: 0 12px 28px rgba(53, 11, 27, 0.1);
   min-height: 18rem;
+  aspect-ratio: 3 / 4;
 }
 
-.about-media img {
+.page-side-media img {
   display: block;
   width: 100%;
   height: 100%;
   min-height: 18rem;
   object-fit: cover;
-  filter: saturate(0.9) contrast(1.04);
+  object-position: center;
+  filter: saturate(0.88) contrast(1.04);
+}
+
+.page-banner {
+  display: block;
+  margin: 0 0 1.4rem;
+  overflow: hidden;
+  border-radius: 1.05rem;
+  background: #3a0f1d;
+  box-shadow: 0 12px 28px rgba(53, 11, 27, 0.08);
+  aspect-ratio: 2.35 / 1;
+  max-height: 15rem;
+}
+
+.page-banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.86) contrast(1.04);
+}
+
+.offer-block-media {
+  display: block;
+  margin: 0 0 1rem;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  background: #3a0f1d;
+  aspect-ratio: 2.4 / 1;
+  max-height: 10.5rem;
+}
+
+.offer-block-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.88) contrast(1.04);
 }
 
 .subpage-body {
@@ -1432,17 +1472,28 @@ input {
 
   .offer-tiles { grid-template-columns: 1fr; }
 
-  .about-layout {
+  .page-split {
     grid-template-columns: 1fr;
   }
 
-  .about-media {
+  .page-side-media {
     position: static;
-    min-height: 16rem;
+    min-height: 0;
     max-height: 22rem;
+    aspect-ratio: 16 / 10;
+    order: -1;
   }
 
-  .about-media img { min-height: 16rem; }
+  .page-side-media img { min-height: 0; }
+
+  .page-banner {
+    max-height: 12rem;
+    aspect-ratio: 16 / 9;
+  }
+
+  .offer-block-media {
+    max-height: 9rem;
+  }
 
   .benefits-layout {
     grid-template-columns: 1fr;
@@ -1477,7 +1528,7 @@ input {
   .topbar-inner,
   .header-inner,
   .split,
-  .about-layout,
+  .page-split,
   .contact-grid,
   .price-list li,
   .editor-row,
