@@ -257,20 +257,28 @@ p { margin: 0 0 1rem; }
 
 .nav-submenu {
   position: absolute;
-  top: calc(100% + 0.55rem);
+  top: 100%;
   left: 50%;
-  transform: translateX(-50%) translateY(0.35rem);
+  transform: translateX(-50%);
   min-width: 13.5rem;
+  /* Invisible hover bridge above the visible panel — no dead gap */
+  padding: 0.55rem 0 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s ease, visibility 0.12s ease;
+  z-index: 20;
+}
+
+.nav-submenu-panel {
   padding: 0.45rem;
   background: #fff;
   border: 1px solid #eadfd4;
   border-radius: 0.9rem;
   box-shadow: 0 16px 36px rgba(53, 11, 27, 0.12);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
-  z-index: 20;
 }
 
 .nav-submenu a {
@@ -295,7 +303,6 @@ p { margin: 0 0 1rem; }
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transform: translateX(-50%) translateY(0);
 }
 
 .nav-item.is-open .nav-parent,
@@ -1530,21 +1537,19 @@ input {
     transform: none;
     min-width: 0;
     margin: 0.15rem 0 0.35rem;
+    padding: 0;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .nav-submenu-panel {
     padding: 0.25rem 0 0.25rem 0.75rem;
     border: 0;
     border-left: 2px solid #eadfd4;
     border-radius: 0;
     box-shadow: none;
     background: transparent;
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-  }
-
-  .nav-item:hover .nav-submenu,
-  .nav-item:focus-within .nav-submenu,
-  .nav-item.is-open .nav-submenu {
-    transform: none;
   }
 
   .nav-submenu a {
