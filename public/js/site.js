@@ -9,6 +9,21 @@ if (toggle && nav) {
   });
 }
 
+document.querySelectorAll(".nav-item.has-submenu").forEach((item) => {
+  const parent = item.querySelector(".nav-parent");
+  if (!parent) return;
+  const syncExpanded = () => {
+    const open = item.matches(":hover, :focus-within, .is-open");
+    parent.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+  item.addEventListener("mouseenter", syncExpanded);
+  item.addEventListener("mouseleave", syncExpanded);
+  item.addEventListener("focusin", syncExpanded);
+  item.addEventListener("focusout", () => {
+    requestAnimationFrame(syncExpanded);
+  });
+});
+
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const revealItems = document.querySelectorAll(".offer-card, .highlights .highlight");
 if (!revealItems.length || reduceMotion || !("IntersectionObserver" in window)) {

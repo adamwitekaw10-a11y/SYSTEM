@@ -221,11 +221,13 @@ p { margin: 0 0 1rem; }
   margin-left: auto;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.2rem 1.8rem;
   justify-content: flex-end;
 }
 
-.nav a {
+.nav > a,
+.nav-parent {
   color: var(--ink);
   text-decoration: none;
   padding: 0.35rem 0;
@@ -234,11 +236,76 @@ p { margin: 0 0 1rem; }
   transition: color 0.2s ease;
 }
 
-.nav a:hover { color: var(--brand-accent); }
+.nav > a:hover,
+.nav-parent:hover { color: var(--brand-accent); }
 
-.nav a[aria-current="page"] {
+.nav > a[aria-current="page"],
+.nav-parent[aria-current="page"] {
   color: var(--brand);
   box-shadow: inset 0 -2px 0 var(--brand-accent);
+}
+
+.nav-item {
+  position: relative;
+}
+
+.nav-parent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.nav-submenu {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  left: 50%;
+  transform: translateX(-50%) translateY(0.35rem);
+  min-width: 13.5rem;
+  padding: 0.45rem;
+  background: #fff;
+  border: 1px solid #eadfd4;
+  border-radius: 0.9rem;
+  box-shadow: 0 16px 36px rgba(53, 11, 27, 0.12);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+  z-index: 20;
+}
+
+.nav-submenu a {
+  display: block;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.65rem;
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 14.5px;
+  white-space: nowrap;
+}
+
+.nav-submenu a:hover {
+  background: #f7f4f1;
+  color: var(--brand-accent);
+}
+
+.nav-item:hover .nav-submenu,
+.nav-item:focus-within .nav-submenu,
+.nav-item.is-open .nav-submenu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.nav-item.is-open .nav-parent,
+.nav-item:hover .nav-parent {
+  color: var(--brand-accent);
+}
+
+.nav-item.is-open .nav-chevron,
+.nav-item:hover .nav-chevron {
+  transform: rotate(180deg);
 }
 
 .header-cta {
@@ -472,9 +539,11 @@ p { margin: 0 0 1rem; }
 }
 
 .nav-chevron {
+  display: inline-block;
   font-size: 0.7em;
-  margin-left: 0.15rem;
+  margin-left: 0.1rem;
   opacity: 0.7;
+  transition: transform 0.16s ease;
 }
 
 .js .hero-copy {
@@ -1451,6 +1520,37 @@ input {
   }
 
   .js .nav.is-open { display: grid; gap: 0.35rem; }
+
+  .nav-item { width: 100%; }
+
+  .nav-submenu {
+    position: static;
+    left: auto;
+    top: auto;
+    transform: none;
+    min-width: 0;
+    margin: 0.15rem 0 0.35rem;
+    padding: 0.25rem 0 0.25rem 0.75rem;
+    border: 0;
+    border-left: 2px solid #eadfd4;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .nav-item:hover .nav-submenu,
+  .nav-item:focus-within .nav-submenu,
+  .nav-item.is-open .nav-submenu {
+    transform: none;
+  }
+
+  .nav-submenu a {
+    padding: 0.45rem 0.35rem;
+    white-space: normal;
+  }
 
   .hero {
     min-height: 500px;
