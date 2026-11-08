@@ -478,7 +478,7 @@ p { margin: 0 0 1rem; }
   display: grid;
   align-items: center;
   overflow: hidden;
-  background: #220d14;
+  background: #f7f1ed;
   isolation: isolate;
 }
 
@@ -508,7 +508,7 @@ p { margin: 0 0 1rem; }
   z-index: 1;
 }
 
-.hero-photo:nth-child(1) { object-position: center center; }
+.hero-photo:nth-child(1) { object-position: 72% center; }
 .hero-photo:nth-child(2) { object-position: 78% center; }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -557,41 +557,19 @@ p { margin: 0 0 1rem; }
   position: absolute;
   inset: 0;
   z-index: 1;
+  pointer-events: none;
   background: linear-gradient(
     90deg,
-    rgba(34, 13, 20, 0.55) 0%,
-    rgba(34, 13, 20, 0.22) 42%,
-    rgba(34, 13, 20, 0.04) 68%,
-    transparent 100%
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.78) 28%,
+    rgba(255, 255, 255, 0.35) 48%,
+    rgba(255, 255, 255, 0) 65%
   );
 }
 
+/* Decorative blobs disabled for light readable hero (markup kept) */
 .hero-blob {
-  position: absolute;
-  z-index: 2;
-  pointer-events: none;
-  background: radial-gradient(circle at 30% 40%, #7a1540 0%, #4a1027 55%, #350b1b 100%);
-  opacity: 0.88;
-  filter: blur(0.5px);
-}
-
-.hero-blob-left {
-  left: -12%;
-  top: -18%;
-  width: min(52vw, 720px);
-  height: min(78vh, 760px);
-  border-radius: 58% 42% 48% 52% / 42% 48% 52% 58%;
-  transform: rotate(-8deg);
-  opacity: 0.82;
-}
-
-.hero-blob-right {
-  right: -6%;
-  bottom: -18%;
-  width: min(28vw, 380px);
-  height: min(34vh, 320px);
-  border-radius: 48% 52% 42% 58% / 52% 38% 62% 48%;
-  opacity: 0.72;
+  display: none;
 }
 
 .hero-inner {
@@ -607,7 +585,7 @@ p { margin: 0 0 1rem; }
 .hero-copy {
   max-width: 920px;
   width: min(920px, 100%);
-  color: white;
+  color: #48192f;
 }
 
 .hero-title {
@@ -615,22 +593,23 @@ p { margin: 0 0 1rem; }
   line-height: 1.05;
   letter-spacing: -0.035em;
   max-width: 920px;
-  color: #fff;
+  color: #48192f;
+  text-shadow: none;
 }
 
-.hero-title > span { display: block; white-space: nowrap; }
+.hero-title > span { display: block; white-space: nowrap; text-shadow: none; }
 
 .hero-title-top {
   font-size: clamp(2.2rem, 3.4vw, 3.35rem);
   font-weight: 500;
-  color: #fff;
+  color: #48192f;
   margin-bottom: 0.12em;
 }
 
 .hero-title-accent {
   font-size: clamp(2.85rem, 5vw, 4.6rem);
   font-weight: 700;
-  color: #ead7c1;
+  color: #8d1746;
 }
 
 .hero-actions {
@@ -663,18 +642,36 @@ p { margin: 0 0 1rem; }
   box-shadow: 0 12px 26px rgba(53, 11, 27, 0.16);
 }
 
-/* On dark hero keep light outline */
-.hero .button-line {
-  background: transparent;
+/* Hero CTA — primary */
+.hero .button:not(.button-line) {
+  background: #a00646;
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.78);
+  border-color: #a00646;
+  box-shadow: 0 8px 20px rgba(160, 6, 70, 0.18);
+}
+
+.hero .button:not(.button-line):hover {
+  background: #88053b;
+  border-color: #88053b;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(160, 6, 70, 0.22);
+}
+
+/* Hero CTA — secondary „Skontaktuj się” */
+.hero .button-line {
+  background: #f7f1ed;
+  color: #48192f;
+  border: 1px solid #48192f;
   box-shadow: none;
 }
 
 .hero .button-line:hover {
-  background: #fff;
-  color: var(--brand-dark);
-  border-color: #fff;
+  background: #efe6df;
+  color: #48192f;
+  border-color: #48192f;
+  transform: translateY(-2px);
+  box-shadow: none;
 }
 
 .btn-phone {
@@ -1968,24 +1965,40 @@ input {
     align-items: end;
   }
 
-  .hero-photo:nth-child(2) { object-position: 65% center; }
-
-  .hero-dots { bottom: 1rem; }
-
-  .hero-blob-left {
-    width: 78vw;
-    height: 70%;
-    left: -28%;
-    opacity: 0.78;
+  .hero-photo:nth-child(1),
+  .hero-photo:nth-child(2) {
+    object-position: 78% center;
   }
 
-  .hero-blob-right { display: none; }
+  .hero-shade {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.96) 0%,
+      rgba(255, 255, 255, 0.88) 36%,
+      rgba(255, 255, 255, 0.45) 58%,
+      rgba(255, 255, 255, 0) 78%
+    );
+  }
+
+  .hero-dots {
+    bottom: 1rem;
+    background: rgba(72, 25, 47, 0.28);
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+  }
+
+  .hero-dot { background: rgba(255, 255, 255, 0.55); }
+  .hero-dot[aria-selected="true"] { background: #fff; }
 
   .hero-inner {
     min-height: 500px;
     height: auto;
     padding: 5rem 0 4.5rem;
     align-items: end;
+  }
+
+  .hero-copy {
+    max-width: min(34rem, 100%);
   }
 
   .hero-title-top {
