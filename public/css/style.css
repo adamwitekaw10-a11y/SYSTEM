@@ -988,11 +988,27 @@ p { margin: 0 0 1rem; }
 }
 
 .offer-block-media--desk img { object-position: center 55%; }
-.offer-block-media--people img { object-position: 62% center; }
+
+.offer-block-media--people {
+  height: clamp(16rem, 32vw, 22rem);
+}
+
+.offer-block-media--people img {
+  object-position: center top;
+}
+
 .offer-block-media--docs {
   height: clamp(10.5rem, 18vw, 13rem);
 }
 .offer-block-media--docs img { object-position: center 48%; }
+
+.page-side-media--remote {
+  aspect-ratio: 4 / 5;
+}
+
+.page-side-media--remote img {
+  object-position: center 40%;
+}
 
 .subpage-body {
   background: #f7f4f1;
@@ -1521,6 +1537,10 @@ input {
 
   .offer-block-media {
     height: 8.75rem;
+  }
+
+  .offer-block-media--people {
+    height: min(70vw, 20rem);
   }
 
   .benefits-layout {
