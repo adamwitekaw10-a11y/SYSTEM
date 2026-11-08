@@ -1629,21 +1629,6 @@ input {
   justify-content: flex-end;
 }
 
-.footer-cta .button-line,
-.footer-cta-phone {
-  background: transparent;
-  color: var(--brand);
-  border-color: rgba(74, 16, 39, 0.28);
-  box-shadow: none;
-}
-
-.footer-cta .button-line:hover,
-.footer-cta-phone:hover {
-  background: var(--brand);
-  color: #fff;
-  border-color: var(--brand);
-}
-
 .site-footer {
   background: var(--brand-dark);
   color: #f6ece8;
