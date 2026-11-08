@@ -989,8 +989,12 @@ p { margin: 0 0 1rem; }
 
 .offer-block-media--desk img { object-position: center 55%; }
 
+.offer-block-media--people {
+  height: clamp(18rem, 36vw, 26rem);
+}
+
 .offer-block-media--people img {
-  object-position: 68% center;
+  object-position: 70% 48%;
 }
 
 .offer-block-media--docs img { object-position: center 48%; }
@@ -1530,6 +1534,10 @@ input {
 
   .offer-block-media {
     height: 12rem;
+  }
+
+  .offer-block-media--people {
+    height: min(78vw, 24rem);
   }
 
   .benefits-layout {
