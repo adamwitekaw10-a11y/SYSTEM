@@ -55,3 +55,54 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
     if (message && !window.confirm(message)) event.preventDefault();
   });
 });
+
+const offerTabsRoot = document.querySelector("[data-offer-tabs]");
+if (offerTabsRoot) {
+  const tabs = [...offerTabsRoot.querySelectorAll("[data-offer-tab]")];
+  const panels = [...offerTabsRoot.querySelectorAll("[data-offer-panel]")];
+  const validIds = new Set(tabs.map((tab) => tab.getAttribute("data-offer-tab")));
+
+  const activateOfferTab = (id, { updateHash = true } = {}) => {
+    if (!validIds.has(id)) id = "ksiegowosc";
+    tabs.forEach((tab) => {
+      const selected = tab.getAttribute("data-offer-tab") === id;
+      tab.classList.toggle("is-active", selected);
+      tab.setAttribute("aria-selected", selected ? "true" : "false");
+      tab.tabIndex = selected ? 0 : -1;
+    });
+    panels.forEach((panel) => {
+      const selected = panel.getAttribute("data-offer-panel") === id;
+      panel.classList.toggle("is-active", selected);
+      panel.hidden = !selected;
+    });
+    if (updateHash) {
+      const next = `#${id}`;
+      if (location.hash !== next) history.replaceState(null, "", next);
+    }
+  };
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      activateOfferTab(tab.getAttribute("data-offer-tab"));
+    });
+    tab.addEventListener("keydown", (event) => {
+      const index = tabs.indexOf(tab);
+      let nextIndex = -1;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex = (index + 1) % tabs.length;
+      if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex = (index - 1 + tabs.length) % tabs.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = tabs.length - 1;
+      if (nextIndex < 0) return;
+      event.preventDefault();
+      tabs[nextIndex].focus();
+      activateOfferTab(tabs[nextIndex].getAttribute("data-offer-tab"));
+    });
+  });
+
+  const fromHash = () => {
+    const id = decodeURIComponent(location.hash.replace(/^#/, ""));
+    activateOfferTab(validIds.has(id) ? id : "ksiegowosc", { updateHash: false });
+  };
+  fromHash();
+  window.addEventListener("hashchange", fromHash);
+}
