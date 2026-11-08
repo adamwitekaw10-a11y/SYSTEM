@@ -990,7 +990,7 @@ p { margin: 0 0 1rem; }
 .offer-block-media--desk img { object-position: center 55%; }
 
 .offer-block-media--people img {
-  object-position: 70% 28%;
+  object-position: 68% center;
 }
 
 .offer-block-media--docs img { object-position: center 48%; }
