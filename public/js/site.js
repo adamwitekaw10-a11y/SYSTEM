@@ -50,7 +50,10 @@ markReveal(".offer-intro > p:not(.eyebrow)", "reveal-copy");
 markReveal(".benefits-head h2", "reveal-title");
 markReveal(".benefits-media", "reveal-media");
 markReveal(".benefit-card", "reveal-card");
-markReveal(".footer-brand, .footer-contact, .footer-edit", "reveal-card");
+markReveal(".footer-cta-copy h2", "reveal-title");
+markReveal(".footer-cta-copy > p:not(.eyebrow)", "reveal-copy");
+markReveal(".footer-cta-actions", "reveal-card");
+markReveal(".footer-brand, .footer-col", "reveal-card");
 markReveal(".page-hero h1", "reveal-title");
 markReveal(".page-side-media, .page-banner, .offer-block-media", "reveal-media");
 markReveal(".contact-grid .page-copy", "reveal-copy");
@@ -78,10 +81,7 @@ const setCascadeDelay = (items, stepMs) => {
 setCascadeDelay([...document.querySelectorAll(".offer-cards .offer-card")], 80);
 setCascadeDelay([...document.querySelectorAll(".highlights .highlight")], 80);
 setCascadeDelay([...document.querySelectorAll(".benefit-grid .benefit-card")], 70);
-setCascadeDelay(
-  [...document.querySelectorAll(".footer-inner > .footer-brand, .footer-inner > .footer-contact, .footer-inner > .footer-edit")],
-  80,
-);
+setCascadeDelay([...document.querySelectorAll(".footer-inner > .footer-brand, .footer-inner > .footer-col")], 80);
 
 if (!revealItems.length || reduceMotion || !("IntersectionObserver" in window)) {
   revealItems.forEach((item) => item.classList.add("is-in"));
