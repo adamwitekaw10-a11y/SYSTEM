@@ -38,6 +38,59 @@ if (header) {
   window.addEventListener("scroll", syncHeader, { passive: true });
 }
 
+/* Home hero slider */
+const heroSlider = document.querySelector("[data-hero-slider]");
+if (heroSlider) {
+  const slides = [...heroSlider.querySelectorAll(".hero-photo")];
+  if (slides.length > 1) {
+    let index = Math.max(0, slides.findIndex((slide) => slide.classList.contains("is-active")));
+    const dots = document.createElement("div");
+    dots.className = "hero-dots";
+    dots.setAttribute("role", "tablist");
+    dots.setAttribute("aria-label", "Slajdy banera");
+
+    const setSlide = (next) => {
+      index = (next + slides.length) % slides.length;
+      slides.forEach((slide, slideIndex) => {
+        const active = slideIndex === index;
+        slide.classList.toggle("is-active", active);
+        if (active) {
+          slide.style.animation = "none";
+          void slide.offsetWidth;
+          slide.style.animation = "";
+        }
+      });
+      [...dots.children].forEach((dot, dotIndex) => {
+        dot.setAttribute("aria-selected", dotIndex === index ? "true" : "false");
+      });
+    };
+
+    slides.forEach((_, slideIndex) => {
+      const dot = document.createElement("button");
+      dot.type = "button";
+      dot.className = "hero-dot";
+      dot.setAttribute("role", "tab");
+      dot.setAttribute("aria-label", `Slajd ${slideIndex + 1}`);
+      dot.setAttribute("aria-selected", slideIndex === index ? "true" : "false");
+      dot.addEventListener("click", () => {
+        setSlide(slideIndex);
+        restartAutoplay();
+      });
+      dots.appendChild(dot);
+    });
+    heroSlider.appendChild(dots);
+
+    let timer = 0;
+    const intervalMs = reduceMotion ? 0 : 6500;
+    const restartAutoplay = () => {
+      if (!intervalMs) return;
+      window.clearInterval(timer);
+      timer = window.setInterval(() => setSlide(index + 1), intervalMs);
+    };
+    restartAutoplay();
+  }
+}
+
 /* Auto-mark reveal targets (motion only — no content changes) */
 const markReveal = (selector, className) => {
   document.querySelectorAll(selector).forEach((el) => {
