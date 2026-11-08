@@ -988,8 +988,11 @@ p { margin: 0 0 1rem; }
 }
 
 .offer-block-media--desk img { object-position: center 55%; }
-.offer-block-media--hands img { object-position: center 45%; }
-.offer-block-media--docs img { object-position: center 35%; }
+.offer-block-media--people img { object-position: 62% center; }
+.offer-block-media--docs {
+  height: clamp(10.5rem, 18vw, 13rem);
+}
+.offer-block-media--docs img { object-position: center 48%; }
 
 .subpage-body {
   background: #f7f4f1;
