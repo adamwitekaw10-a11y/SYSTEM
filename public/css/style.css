@@ -1941,6 +1941,7 @@ input {
 
   .page-split {
     grid-template-columns: 1fr;
+    gap: 1.75rem;
   }
 
   .page-side-media {
@@ -1948,10 +1949,14 @@ input {
     min-height: 0;
     max-height: 22rem;
     aspect-ratio: 16 / 10;
-    order: -1;
+    /* DOM: copy → media; bez order:-1 zdjęcie zostaje pod CTA z wyraźnym gapem */
   }
 
   .page-side-media img { min-height: 0; }
+
+  .page-copy .hero-actions {
+    margin: 1.5rem 0 0.25rem;
+  }
 
   .page-banner {
     height: 11rem;
@@ -1992,7 +1997,6 @@ input {
   .container { width: min(1320px, calc(100% - 32px)); }
 
   .split,
-  .page-split,
   .contact-grid,
   .price-list li,
   .editor-row,
@@ -2000,6 +2004,8 @@ input {
   .highlights-grid,
   .benefit-grid,
   .footer-inner { display: block; }
+
+  /* page-split zostaje gridem (1 kolumna z ≤1100px), żeby zachować gap */
 
   .price-list li {
     flex-direction: column;
@@ -2012,27 +2018,8 @@ input {
 
   .benefit-card { margin-top: 0.8rem; }
 
-  /* Topbar: wyśrodkowany na mobile */
-  .topbar-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.3rem;
-    min-height: 0;
-    padding: 0.55rem 0;
-    text-align: center;
-  }
-
-  .topbar-inner p + p { margin-top: 0; }
-
-  .top-item {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .topbar a { margin-right: 0.55rem; }
-  .topbar a:last-child { margin-right: 0; }
+  /* Topbar kontaktowy: ukryty na mobile */
+  .topbar { display: none; }
 
   /* Header: logo + Menu w jednej linii (Menu po prawej) */
   .header-inner {

@@ -240,7 +240,7 @@ function layout(array $opts): string
   <meta name="twitter:description" content="' . e($description) . '">
   <link rel="icon" href="/img/ico.jpg" type="image/jpeg">
   <link rel="apple-touch-icon" href="/img/ico.jpg">
-  <link rel="stylesheet" href="/css/style.css?v=61">
+  <link rel="stylesheet" href="/css/style.css?v=62">
   <script type="application/ld+json">' . $jsonLd . '</script>
 </head>
 <body>
