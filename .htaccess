@@ -1,0 +1,30 @@
+# Biuro Rachunkowe AS — routing przyjaznych URL na klasycznym Apache (ALTe).
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Jeśli DocumentRoot wskazuje na katalog aplikacji:
+  # RewriteBase /
+
+  # Blokada bezpośredniego HTTP do katalogów wrażliwych
+  RewriteRule ^(lib|data)(/|$) - [F,L]
+
+  # Statyczne pliki z public/ (css, js, img, fonts, robots, sitemap)
+  RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
+  RewriteRule ^(.*)$ public/$1 [L]
+
+  # Favicon
+  RewriteRule ^favicon\.ico$ public/img/ico.jpg [L]
+
+  # Front controller
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "DENY"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
