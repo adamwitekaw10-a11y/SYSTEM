@@ -15,17 +15,18 @@ import {
   rateLimited,
   recordFailure,
   sessionCookie,
-  usingDevPassword,
 } from "./lib/auth.js";
 import { cleanText, pageError, readForm, redirect, securityHeaders, send } from "./lib/http.js";
 import {
   renderAbout,
   renderAdvisor,
   renderContact,
+  renderCookies,
   renderHome,
   renderLogin,
   renderOffer,
   renderPrices,
+  renderPrivacy,
   renderProfessional,
   renderRemote,
   renderSupport,
@@ -45,6 +46,8 @@ const TYPES = {
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
   ".woff2": "font/woff2",
+  ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
 };
 
 const pages = {
@@ -56,6 +59,8 @@ const pages = {
   "/indywidualny-doradca": renderAdvisor,
   "/wsparcie": renderSupport,
   "/profesjonalizm": renderProfessional,
+  "/polityka-prywatnosci": renderPrivacy,
+  "/polityka-cookies": renderCookies,
 };
 
 function normalizePath(pathname) {
@@ -274,12 +279,6 @@ async function handle(req, res) {
 
 const port = Number(process.env.PORT ?? 3000);
 const host = process.env.HOST || "127.0.0.1";
-
-if (usingDevPassword()) {
-  console.warn(
-    "ADMIN_PASSWORD nie jest ustawione. Logowanie lokalne używa hasła deweloperskiego, które nie jest pokazywane w interfejsie.",
-  );
-}
 
 const server = createServer((req, res) => {
   handle(req, res).catch((error) => {

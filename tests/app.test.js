@@ -65,7 +65,9 @@ test("strony publiczne, cennik i edycja po zalogowaniu", async (t) => {
     ["/oferta", "Księgi Handlowe", "60,00 zł", "Kadry i płace"],
     ["/cennik", "Podatkowa Księga Przychodów i Rozchodów", "od 200 zł", "kwotami netto"],
     ["/zdalnaksiegowosc", "Umowa bez wychodzenia z domu", "dedykowanego specjalistę"],
-    ["/kontakt", "Aneta Stanik", "biuro@biuro-as.pl", "woj. Małopolskie"],
+    ["/kontakt", "Aneta Stanik", "biuro@biuro-as.pl", "woj. Małopolskie", "data-map-embed", "Pokaż mapę"],
+    ["/polityka-prywatnosci", "Administrator danych", "Biuro Rachunkowe AS Aneta Stanik", "cookie sesji"],
+    ["/polityka-cookies", "Cookies własne", "sid", "Pokaż mapę"],
     ["/profesjonalizm", "sprawdzone systemy obsługi księgowej"],
     ["/wsparcie", "Naszą oferta jest szeroka"],
     ["/indywidualny-doradca", "papierkową robotą"],
@@ -79,6 +81,12 @@ test("strony publiczne, cennik i edycja po zalogowaniu", async (t) => {
     assert.match(response.headers.get("referrer-policy"), /strict-origin/);
     const html = await bodyOf(response);
     for (const needle of needles) assert.ok(html.includes(needle), `${route} brak: ${needle}`);
+    assert.match(html, /rel="canonical"/);
+    assert.match(html, /property="og:title"/);
+    assert.match(html, /application\/ld\+json/);
+    assert.match(html, /href="\/polityka-prywatnosci"/);
+    assert.match(html, /href="\/polityka-cookies"/);
+    assert.match(html, /data-cookie-banner/);
     if (route === "/") {
       assert.match(html, /Poznaj ofertę[\s\S]*href="\/oferta"|href="\/oferta"[\s\S]*Poznaj ofertę/);
       assert.match(html, /href="\/oferta#ksiegowosc"/);
@@ -87,9 +95,23 @@ test("strony publiczne, cennik i edycja po zalogowaniu", async (t) => {
       assert.match(html, /data-hero-slider/);
       assert.equal(html.includes('src="/img/hero-office.jpg"'), false);
     }
+    if (route === "/kontakt") {
+      assert.equal(/<iframe[^>]+src=["']https:\/\/www\.google\.com\/maps\/embed/i.test(html), false);
+      assert.match(html, /data-map-src="https:\/\/www\.google\.com\/maps\/embed/);
+    }
     assert.equal(html.includes(PASSWORD), false);
     assert.equal(html.includes("dev-only-change-me"), false);
   }
+
+  const robots = await fetch(base + "/robots.txt");
+  assert.equal(robots.status, 200);
+  assert.match(await robots.text(), /Sitemap:\s*https:\/\/www\.biuro-as\.pl\/sitemap\.xml/);
+
+  const sitemap = await fetch(base + "/sitemap.xml");
+  assert.equal(sitemap.status, 200);
+  const sitemapXml = await sitemap.text();
+  assert.match(sitemapXml, /https:\/\/www\.biuro-as\.pl\/kontakt/);
+  assert.match(sitemapXml, /https:\/\/www\.biuro-as\.pl\/polityka-prywatnosci/);
 
   const logo = await fetch(base + "/img/logo_small.jpg");
   assert.equal(logo.status, 200);
@@ -208,4 +230,42 @@ test("strony publiczne, cennik i edycja po zalogowaniu", async (t) => {
     redirect: "manual",
   });
   assert.equal(foreign.status, 403);
+});
+
+test("bez ADMIN_PASSWORD serwer nie startuje", async () => {
+  await new Promise((resolve, reject) => {
+    const child = spawn(
+      process.execPath,
+      ["--disable-warning=ExperimentalWarning", "server.js"],
+      {
+        cwd: root,
+        env: {
+          ...process.env,
+          HOST: "127.0.0.1",
+          PORT: "0",
+          ADMIN_PASSWORD: "",
+          DATA_PATH: path.join(tmpdir(), "biuro-as-no-pass.sqlite"),
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+    let stderr = "";
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error(`oczekiwano wyjścia z błędem hasła, stderr=${stderr}`));
+    }, 5000);
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("exit", (code) => {
+      clearTimeout(timer);
+      try {
+        assert.notEqual(code, 0);
+        assert.match(stderr, /ADMIN_PASSWORD/);
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
 });

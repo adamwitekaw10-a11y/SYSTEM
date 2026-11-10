@@ -22,11 +22,13 @@ ADMIN_PASSWORD='twoje-haslo' npm start
 
 Nazwa użytkownika to `admin`. Logowanie: `/logowanie`.
 
-Jeśli `ADMIN_PASSWORD` nie jest ustawione, serwer używa lokalnego hasła deweloperskiego. Ta wartość nie jest pokazywana w interfejsie i nie nadaje się do serwera dostępnego publicznie.
+Bez `ADMIN_PASSWORD` serwer **nie startuje** (jasny komunikat w konsoli).
 
 Pozycje cennika trafiają do pliku `data/cennik.sqlite` (katalog jest w `.gitignore`).
 
-Za odwrotnym proxy HTTPS ustaw `TRUST_PROXY=1`, żeby ciasteczko sesji dostało flagę `Secure`.
+Za odwrotnym proxy HTTPS ustaw `TRUST_PROXY=1`, żeby ciasteczko sesji dostało flagę `Secure`, a rate-limit logowania brał IP z `X-Forwarded-For`.
+
+Opcjonalnie `SITE_URL` (domyślnie `https://www.biuro-as.pl`) ustawia canonical / Open Graph.
 
 ## Testy
 

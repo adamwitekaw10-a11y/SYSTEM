@@ -110,7 +110,7 @@ markReveal(".footer-brand, .footer-col", "reveal-card");
 markReveal(".page-hero h1", "reveal-title");
 markReveal(".page-side-media, .page-banner, .offer-block-media", "reveal-media");
 markReveal(".contact-grid .page-copy", "reveal-copy");
-markReveal(".contact-grid iframe", "reveal-media");
+markReveal(".contact-grid .map-embed", "reveal-media");
 markReveal(".subpage-panel > h2", "reveal-title");
 markReveal(".subpage-panel > .lead", "reveal-copy");
 
@@ -222,6 +222,44 @@ document.querySelectorAll("form[data-confirm]").forEach((form) => {
   form.addEventListener("submit", (event) => {
     const message = form.getAttribute("data-confirm");
     if (message && !window.confirm(message)) event.preventDefault();
+  });
+});
+
+/* Cookie info banner — necessary sid only; dismiss stored in localStorage */
+const cookieBanner = document.querySelector("[data-cookie-banner]");
+const cookieAccept = document.querySelector("[data-cookie-accept]");
+const COOKIE_NOTICE_KEY = "biuro-as-cookie-notice";
+if (cookieBanner && cookieAccept) {
+  let seen = false;
+  try {
+    seen = window.localStorage.getItem(COOKIE_NOTICE_KEY) === "1";
+  } catch {
+    seen = false;
+  }
+  if (!seen) cookieBanner.hidden = false;
+  cookieAccept.addEventListener("click", () => {
+    try {
+      window.localStorage.setItem(COOKIE_NOTICE_KEY, "1");
+    } catch {
+      /* ignore quota / private mode */
+    }
+    cookieBanner.hidden = true;
+  });
+}
+
+/* Google Maps — load only after explicit click */
+document.querySelectorAll("[data-map-embed]").forEach((box) => {
+  const button = box.querySelector("[data-map-load]");
+  const src = box.getAttribute("data-map-src");
+  if (!button || !src) return;
+  button.addEventListener("click", () => {
+    const iframe = document.createElement("iframe");
+    iframe.title = "Mapa: Biuro Rachunkowe AS";
+    iframe.src = src;
+    iframe.loading = "lazy";
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
+    iframe.setAttribute("allowfullscreen", "");
+    box.replaceChildren(iframe);
   });
 });
 
