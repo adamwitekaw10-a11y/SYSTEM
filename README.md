@@ -1,37 +1,40 @@
-# Biuro Rachunkowe AS
+# Biuro Rachunkowe AS (PHP)
 
-Nowa strona biura: te same informacje, co na [biuro-as.pl](https://www.biuro-as.pl/), w prostszym układzie. Cennik mogą zmieniać tylko zalogowane osoby.
+Strona Biura Rachunkowego AS pod klasyczny hosting PHP (ALTe: FTP, PHP 8.x, SQLite lub JSON). Bez Composer i bez Node.
 
-## Uruchomienie
+## Wymagania
 
-Wymagany jest Node.js 22.
+- PHP 8.0–8.3
+- Rozszerzenia: `session`, `json`, `mbstring`
+- Opcjonalnie `pdo_sqlite` (gdy brak — cennik w `data/cennik.json`)
+- Apache z `mod_rewrite` (produkcja) albo `php -S` (lokalnie)
 
-```bash
-npm start
-```
-
-Strona działa pod adresem `http://127.0.0.1:3000`.
-
-## Hasło administratora
-
-Hasło nie jest zapisane w kodzie. Ustaw zmienną środowiskową `ADMIN_PASSWORD` przed startem:
+## Konfiguracja
 
 ```bash
-ADMIN_PASSWORD='twoje-haslo' npm start
+cp config.example.php config.php
+# ustaw admin_password w config.php
 ```
 
-Nazwa użytkownika to `admin`. Logowanie: `/logowanie`.
+Albo zmienna środowiskowa `ADMIN_PASSWORD` (nadpisuje config).
 
-Bez `ADMIN_PASSWORD` serwer **nie startuje** (jasny komunikat w konsoli).
-
-Pozycje cennika trafiają do pliku `data/cennik.sqlite` (katalog jest w `.gitignore`).
-
-Za odwrotnym proxy HTTPS ustaw `TRUST_PROXY=1`, żeby ciasteczko sesji dostało flagę `Secure`, a rate-limit logowania brał IP z `X-Forwarded-For`.
-
-Opcjonalnie `SITE_URL` (domyślnie `https://www.biuro-as.pl`) ustawia canonical / Open Graph.
-
-## Testy
+## Lokalnie
 
 ```bash
-npm test
+php -S 127.0.0.1:8080 router.php
 ```
+
+Strona: http://127.0.0.1:8080  
+Logowanie: `/logowanie` (użytkownik `admin`).
+
+## FTP / ALTe
+
+Szczegóły: instrukcja wdrożenia w dokumentacji projektu (`docs/biuro-as-php-deploy.md`).
+
+W skrócie: wrzuć zawartość paczki do `public_html`, skopiuj `config.example.php` → `config.php` z hasłem, ustaw prawa zapisu do `data/`.
+
+## Cennik
+
+- SQLite: `data/cennik.sqlite` (gdy PDO_sqlite dostępne)
+- JSON: `data/cennik.json` (fallback)
+- Katalog `data/` zablokowany przez `.htaccess`

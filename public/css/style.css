@@ -1941,6 +1941,7 @@ input {
 
   .page-split {
     grid-template-columns: 1fr;
+    gap: 1.75rem;
   }
 
   .page-side-media {
@@ -1948,10 +1949,14 @@ input {
     min-height: 0;
     max-height: 22rem;
     aspect-ratio: 16 / 10;
-    order: -1;
+    /* DOM: copy → media; bez order:-1 zdjęcie zostaje pod CTA z wyraźnym gapem */
   }
 
   .page-side-media img { min-height: 0; }
+
+  .page-copy .hero-actions {
+    margin: 1.5rem 0 0.25rem;
+  }
 
   .page-banner {
     height: 11rem;
@@ -1991,10 +1996,7 @@ input {
   .wrap,
   .container { width: min(1320px, calc(100% - 32px)); }
 
-  .topbar-inner,
-  .header-inner,
   .split,
-  .page-split,
   .contact-grid,
   .price-list li,
   .editor-row,
@@ -2002,6 +2004,8 @@ input {
   .highlights-grid,
   .benefit-grid,
   .footer-inner { display: block; }
+
+  /* page-split zostaje gridem (1 kolumna z ≤1100px), żeby zachować gap */
 
   .price-list li {
     flex-direction: column;
@@ -2014,38 +2018,73 @@ input {
 
   .benefit-card { margin-top: 0.8rem; }
 
-  .topbar-inner {
-    min-height: 0;
-    padding: 0.45rem 0;
-  }
+  /* Topbar kontaktowy: ukryty na mobile */
+  .topbar { display: none; }
 
-  .topbar-inner p + p { margin-top: 0.2rem; }
-
+  /* Header: logo + Menu w jednej linii (Menu po prawej) */
   .header-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
     min-height: 0;
     padding: 0.7rem 0;
-    flex-wrap: wrap;
   }
 
-  .brand { margin-bottom: 0; }
+  .brand {
+    margin-bottom: 0;
+    order: 1;
+  }
 
   .brand img { height: 52px; }
 
   .header-cta { display: none; }
 
-  .nav-toggle { display: inline-flex; }
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    order: 2;
+    margin-left: auto;
+  }
 
   .js .nav {
     display: none;
+    order: 3;
     width: 100%;
-    margin: 0.8rem 0 0;
-    padding-top: 0.6rem;
+    flex-basis: 100%;
+    margin: 0.55rem 0 0;
+    padding: 0.75rem 0 0.25rem;
     border-top: 1px solid var(--line);
+    justify-content: center;
+    justify-items: center;
+    text-align: center;
   }
 
-  .js .nav.is-open { display: grid; gap: 0.35rem; }
+  .js .nav.is-open {
+    display: grid;
+    gap: 0.45rem;
+  }
 
-  .nav-item { width: 100%; }
+  .nav > a,
+  .nav-parent {
+    justify-content: center;
+    width: auto;
+  }
+
+  .nav > a::after,
+  .nav-parent::after {
+    left: 15%;
+    right: 15%;
+  }
+
+  .nav-item {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 
   .nav-submenu {
     position: static;
@@ -2053,6 +2092,7 @@ input {
     top: auto;
     transform: none;
     min-width: 0;
+    width: 100%;
     margin: 0.15rem 0 0.35rem;
     padding: 0;
     opacity: 1;
@@ -2061,17 +2101,21 @@ input {
   }
 
   .nav-submenu-panel {
-    padding: 0.25rem 0 0.25rem 0.75rem;
+    padding: 0.25rem 0;
     border: 0;
-    border-left: 2px solid #eadfd4;
+    border-left: 0;
     border-radius: 0;
     box-shadow: none;
     background: transparent;
+    display: grid;
+    justify-items: center;
+    gap: 0.1rem;
   }
 
   .nav-submenu a {
     padding: 0.45rem 0.35rem;
     white-space: normal;
+    text-align: center;
   }
 
   .hero {

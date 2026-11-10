@@ -1,4 +1,9 @@
 node_modules/
-data/
+data/*.sqlite
+data/*.sqlite-*
+data/cennik.json
+data/rate-limit.json
+data/sessions/
+config.php
 .env
 *.log
