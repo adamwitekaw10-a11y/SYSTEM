@@ -2,8 +2,10 @@
 declare(strict_types=1);
 
 const SESSION_SECONDS = 8 * 60 * 60;
+const SESSION_IDLE_SECONDS = 2 * 60 * 60;
 const RATE_WINDOW_SECONDS = 15 * 60;
 const RATE_MAX_ATTEMPTS = 8;
+const PASSWORD_MIN_LENGTH = 10;
 
 function start_app_session(array $config): void
 {
@@ -14,12 +16,16 @@ function start_app_session(array $config): void
     $secure = is_https_request($config);
     session_name('sid');
     session_set_cookie_params([
-        'lifetime' => SESSION_SECONDS,
+        'lifetime' => 0, // session cookie; expiry enforced server-side
         'path' => '/',
         'secure' => $secure,
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.cookie_httponly', '1');
+    ini_set('session.cookie_samesite', 'Lax');
     session_start([
         'use_strict_mode' => true,
         'cookie_httponly' => true,
@@ -28,14 +34,23 @@ function start_app_session(array $config): void
         'gc_maxlifetime' => SESSION_SECONDS,
     ]);
 
+    $now = time();
     if (empty($_SESSION['created_at'])) {
-        $_SESSION['created_at'] = time();
+        $_SESSION['created_at'] = $now;
     }
-    if (time() - (int) $_SESSION['created_at'] > SESSION_SECONDS) {
+    if (empty($_SESSION['last_activity'])) {
+        $_SESSION['last_activity'] = $now;
+    }
+
+    $created = (int) $_SESSION['created_at'];
+    $last = (int) $_SESSION['last_activity'];
+    if ($now - $created > SESSION_SECONDS || $now - $last > SESSION_IDLE_SECONDS) {
         destroy_app_session();
         start_app_session($config);
         return;
     }
+    $_SESSION['last_activity'] = $now;
+
     if (empty($_SESSION['csrf']) || !is_string($_SESSION['csrf'])) {
         $_SESSION['csrf'] = bin2hex(random_bytes(32));
     }
@@ -60,19 +75,30 @@ function destroy_app_session(): void
     }
 }
 
-function regenerate_session_auth(array $config): void
+function regenerate_session_auth(string $username): void
 {
     session_regenerate_id(true);
     $_SESSION['created_at'] = time();
+    $_SESSION['last_activity'] = time();
     $_SESSION['csrf'] = bin2hex(random_bytes(32));
-    $_SESSION['user'] = 'admin';
+    $_SESSION['user'] = $username;
     $_SESSION['flash'] = '';
+}
+
+function rotate_csrf_token(): void
+{
+    $_SESSION['csrf'] = bin2hex(random_bytes(32));
 }
 
 function session_user(): ?string
 {
     $user = $_SESSION['user'] ?? null;
     return is_string($user) && $user !== '' ? $user : null;
+}
+
+function is_admin_logged_in(): bool
+{
+    return session_user() !== null;
 }
 
 function csrf_token(): string
@@ -119,16 +145,123 @@ function client_address(array $config): string
     return (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
 }
 
+function admin_auth_file(): string
+{
+    return app_root() . '/data/admin-auth.json';
+}
+
+/** @return array{username:string,password_hash:?string,password_plain:?string} */
+function resolve_admin_credentials(array $config): array
+{
+    $file = admin_auth_file();
+    if (is_file($file)) {
+        $raw = file_get_contents($file);
+        $data = is_string($raw) ? json_decode($raw, true) : null;
+        if (is_array($data)) {
+            $user = trim((string) ($data['username'] ?? ''));
+            $hash = (string) ($data['password_hash'] ?? '');
+            if ($user !== '' && $hash !== '' && str_starts_with($hash, '$')) {
+                return [
+                    'username' => $user,
+                    'password_hash' => $hash,
+                    'password_plain' => null,
+                ];
+            }
+        }
+    }
+
+    $user = (string) ($config['admin_username'] ?? 'admin');
+    $hash = trim((string) ($config['admin_password_hash'] ?? ''));
+    if ($hash !== '' && str_starts_with($hash, '$')) {
+        return [
+            'username' => $user !== '' ? $user : 'admin',
+            'password_hash' => $hash,
+            'password_plain' => null,
+        ];
+    }
+
+    $plain = (string) ($config['admin_password'] ?? '');
+    return [
+        'username' => $user !== '' ? $user : 'admin',
+        'password_hash' => null,
+        'password_plain' => $plain,
+    ];
+}
+
+function password_is_placeholder(string $password): bool
+{
+    return $password === '' || $password === 'ZMIEŃ-TO-HASŁO';
+}
+
 function credentials_match(array $config, string $username, string $password): bool
 {
-    $expectedUser = (string) $config['admin_username'];
-    $expectedPass = (string) $config['admin_password'];
-    if ($expectedPass === '' || $expectedPass === 'ZMIEŃ-TO-HASŁO') {
+    $creds = resolve_admin_credentials($config);
+    $userOk = hash_equals($creds['username'], $username);
+
+    if ($creds['password_hash'] !== null) {
+        $passOk = password_verify($password, $creds['password_hash']);
+        return $userOk && $passOk;
+    }
+
+    $plain = (string) $creds['password_plain'];
+    if (password_is_placeholder($plain)) {
         return false;
     }
-    $userOk = hash_equals($expectedUser, $username);
-    $passOk = hash_equals($expectedPass, $password);
+    $passOk = hash_equals($plain, $password);
     return $userOk && $passOk;
+}
+
+/**
+ * @return array{ok:bool,error:string}
+ */
+function update_admin_credentials(
+    array $config,
+    string $currentPassword,
+    string $newUsername,
+    string $newPassword,
+    string $newPasswordConfirm
+): array {
+    $storedUser = resolve_admin_credentials($config)['username'];
+    if (!credentials_match($config, $storedUser, $currentPassword)) {
+        return ['ok' => false, 'error' => 'Obecne hasło jest nieprawidłowe.'];
+    }
+
+    $newUsername = trim($newUsername);
+    if ($newUsername === '' || mb_strlen($newUsername) > 80 || !preg_match('/^[a-zA-Z0-9._@-]+$/', $newUsername)) {
+        return ['ok' => false, 'error' => 'Login może zawierać litery, cyfry oraz . _ @ - (max 80 znaków).'];
+    }
+    if ($newPassword !== $newPasswordConfirm) {
+        return ['ok' => false, 'error' => 'Nowe hasło i potwierdzenie muszą być takie same.'];
+    }
+    if (mb_strlen($newPassword) < PASSWORD_MIN_LENGTH) {
+        return ['ok' => false, 'error' => 'Nowe hasło musi mieć co najmniej ' . PASSWORD_MIN_LENGTH . ' znaków.'];
+    }
+    if (password_is_placeholder($newPassword)) {
+        return ['ok' => false, 'error' => 'Wybierz inne, silne hasło.'];
+    }
+
+    $hash = password_hash($newPassword, PASSWORD_DEFAULT);
+    if (!is_string($hash) || $hash === '') {
+        return ['ok' => false, 'error' => 'Nie udało się zapisać hasła.'];
+    }
+
+    $dir = dirname(admin_auth_file());
+    if (!is_dir($dir)) {
+        mkdir($dir, 0750, true);
+    }
+    $payload = json_encode([
+        'username' => $newUsername,
+        'password_hash' => $hash,
+        'updated_at' => gmdate('c'),
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    if ($payload === false) {
+        return ['ok' => false, 'error' => 'Nie udało się zapisać konta.'];
+    }
+    if (file_put_contents(admin_auth_file(), $payload, LOCK_EX) === false) {
+        return ['ok' => false, 'error' => 'Brak uprawnień zapisu do katalogu data/.'];
+    }
+
+    return ['ok' => true, 'error' => ''];
 }
 
 function rate_limit_file(): string

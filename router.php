@@ -8,10 +8,38 @@
 declare(strict_types=1);
 
 $uri = urldecode(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
+
+// Blokada bezpośredniego HTTP do ścieżek wrażliwych (php -S nie czyta .htaccess).
+if (
+    preg_match('#^/(data|lib)(/|$)#i', $uri)
+    || preg_match('#^/config(\.example)?\.php$#i', $uri)
+    || preg_match('#/\.#', $uri)
+) {
+    http_response_code(403);
+    header('Content-Type: text/plain; charset=utf-8');
+    header('X-Content-Type-Options: nosniff');
+    echo 'Forbidden';
+    return true;
+}
+
 $publicFile = __DIR__ . '/public' . $uri;
 
 if ($uri !== '/' && is_file($publicFile)) {
+    $realPublic = realpath(__DIR__ . '/public');
+    $realFile = realpath($publicFile);
+    if ($realPublic === false || $realFile === false || !str_starts_with($realFile, $realPublic . DIRECTORY_SEPARATOR)) {
+        http_response_code(403);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Forbidden';
+        return true;
+    }
     $ext = strtolower(pathinfo($publicFile, PATHINFO_EXTENSION));
+    if ($ext === 'php' || $ext === 'phtml' || $ext === 'phar') {
+        http_response_code(403);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Forbidden';
+        return true;
+    }
     $types = [
         'css' => 'text/css; charset=utf-8',
         'js' => 'text/javascript; charset=utf-8',
@@ -27,10 +55,11 @@ if ($uri !== '/' && is_file($publicFile)) {
     ];
     if (isset($types[$ext])) {
         header('Content-Type: ' . $types[$ext]);
-        header('Cache-Control: public, max-age=86400');
-        readfile($publicFile);
-        return true;
     }
+    header('Cache-Control: public, max-age=31536000, immutable');
+    header('X-Content-Type-Options: nosniff');
+    readfile($publicFile);
+    return true;
 }
 
 if ($uri === '/favicon.ico') {

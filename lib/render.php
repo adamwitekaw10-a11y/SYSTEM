@@ -41,23 +41,38 @@ function nav_items(): array
     ];
 }
 
+function contact_postal_parts(array $c): array
+{
+    if (preg_match('/^(\d{2}-\d{3})\s+(.+)$/u', (string) $c['postal_city'], $m)) {
+        return ['postal' => $m[1], 'city' => $m[2]];
+    }
+    return ['postal' => '', 'city' => (string) $c['city_short']];
+}
+
 function local_business_json(): string
 {
     $site = site_url_cfg();
+    $c = site_contact();
+    $parts = contact_postal_parts($c);
+    $phoneTel = contact_tel_href($c['phone']);
+    $mobileTel = contact_tel_href($c['phone_mobile']);
     $data = [
         '@context' => 'https://schema.org',
         '@type' => 'AccountingService',
         'name' => SITE_NAME,
-        'alternateName' => 'Biuro Rachunkowe AS Aneta Stanik',
+        'alternateName' => 'Biuro Rachunkowe AS ' . $c['owner'],
         'url' => $site,
         'image' => $site . '/img/logo_small.jpg',
-        'telephone' => ['+48 18 541 22 17', '+48 530 770 208'],
-        'email' => 'biuro@biuro-as.pl',
+        'telephone' => [
+            preg_replace('/^tel:/', '', $phoneTel) ?: $c['phone'],
+            preg_replace('/^tel:/', '', $mobileTel) ?: $c['phone_mobile'],
+        ],
+        'email' => $c['email'],
         'address' => [
             '@type' => 'PostalAddress',
-            'streetAddress' => 'ul. Bora-Komorowskiego 22/1',
-            'addressLocality' => 'Nowy Sącz',
-            'postalCode' => '33-300',
+            'streetAddress' => $c['street'],
+            'addressLocality' => $parts['city'] !== '' ? $parts['city'] : $c['city_short'],
+            'postalCode' => $parts['postal'],
             'addressRegion' => 'Małopolskie',
             'addressCountry' => 'PL',
         ],
@@ -69,10 +84,10 @@ function local_business_json(): string
         'openingHoursSpecification' => [
             '@type' => 'OpeningHoursSpecification',
             'dayOfWeek' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-            'opens' => '09:00',
-            'closes' => '16:00',
+            'opens' => $c['hours_opens'],
+            'closes' => $c['hours_closes'],
         ],
-        'areaServed' => 'Nowy Sącz',
+        'areaServed' => $c['city_short'],
         'priceRange' => '$$',
     ];
     return str_replace('<', '\\u003c', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -151,17 +166,20 @@ function render_site_footer(?string $sessionUser): string
         $shortcutLinks .= '<li><a href="' . e($item['href']) . '">' . e($item['label']) . '</a></li>';
     }
     $editLink = $sessionUser
-        ? '<p class="footer-edit"><a href="/cennik">Edycja cennika</a></p>'
+        ? '<p class="footer-edit"><a href="/admin">Panel edycji</a></p>'
         : '';
     $year = date('Y');
+    $c = site_contact();
+    $phoneHref = e(contact_tel_href($c['phone']));
+    $mobileHref = e(contact_tel_href($c['phone_mobile']));
 
     return '<footer class="site-footer">
     <div class="wrap footer-inner">
       <div class="footer-brand">
         <p class="footer-name">Biuro Rachunkowe AS</p>
-        <p>ul. Bora-Komorowskiego 22 lok. 1<br>
-        33-300 Nowy Sącz</p>
-        <p class="footer-hours">Poniedziałek – Piątek: 09:00 – 16:00</p>
+        <p>' . e($c['street_footer']) . '<br>
+        ' . e($c['postal_city']) . '</p>
+        <p class="footer-hours">' . e($c['hours']) . '</p>
       </div>
       <nav class="footer-col" aria-label="Menu">
         <p class="footer-heading">Menu</p>
@@ -173,9 +191,9 @@ function render_site_footer(?string $sessionUser): string
       </nav>
       <div class="footer-col footer-contact">
         <p class="footer-heading">Dane kontaktowe</p>
-        <p>tel. <a href="tel:+48185412217">18 541 22 17</a><br>
-        kom. <a href="tel:+48530770208">530 770 208</a><br>
-        e-mail <a href="mailto:biuro@biuro-as.pl">biuro@biuro-as.pl</a></p>
+        <p>tel. <a href="' . $phoneHref . '">' . e($c['phone']) . '</a><br>
+        kom. <a href="' . $mobileHref . '">' . e($c['phone_mobile']) . '</a><br>
+        e-mail <a href="mailto:' . e($c['email']) . '">' . e($c['email']) . '</a></p>
         ' . $editLink . '
       </div>
     </div>
@@ -191,6 +209,28 @@ function render_site_footer(?string $sessionUser): string
     </div>
   </footer>';
 }
+function render_topbar(): string
+{
+    $c = site_contact();
+    return '<div class="topbar">
+    <div class="wrap topbar-inner">
+      <p class="top-item">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.5h2.6l1.2 3-1.9 1.1a12.2 12.2 0 0 0 6.1 6.1l1.1-1.9 3 1.2v2.6a1.7 1.7 0 0 1-1.7 1.7A13.4 13.4 0 0 1 4.9 5.2a1.7 1.7 0 0 1 1.7-1.7z"/></svg>
+        <a href="' . e(contact_tel_href($c['phone'])) . '">' . e($c['phone']) . '</a>
+        <a href="' . e(contact_tel_href($c['phone_mobile'])) . '">' . e($c['phone_mobile']) . '</a>
+      </p>
+      <p class="top-item">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.8a6.2 6.2 0 0 0-6.2 6.2c0 4.6 6.2 11.2 6.2 11.2s6.2-6.6 6.2-11.2A6.2 6.2 0 0 0 12 2.8zm0 8.3a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z"/></svg>
+        ' . e($c['city_short'] . ', ' . $c['street']) . '
+      </p>
+      <p class="top-item">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8.1V12l2.5 1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        ' . e($c['hours']) . '
+      </p>
+    </div>
+  </div>';
+}
+
 function layout(array $opts): string
 {
     $title = (string) $opts['title'];
@@ -204,11 +244,26 @@ function layout(array $opts): string
     $canonical = absolute_url($active !== '' ? $active : '/');
     $ogImage = site_url_cfg() . '/img/logo_small.jpg';
     $jsonLd = local_business_json();
+    $preloadLinks = '';
+    foreach ($opts['preload'] ?? [] as $preload) {
+        if (!is_array($preload) || empty($preload['href'])) {
+            continue;
+        }
+        $as = e((string) ($preload['as'] ?? 'image'));
+        $href = e((string) $preload['href']);
+        $type = !empty($preload['type']) ? ' type="' . e((string) $preload['type']) . '"' : '';
+        $imagesizes = !empty($preload['imagesizes']) ? ' imagesizes="' . e((string) $preload['imagesizes']) . '"' : '';
+        $imagesrcset = !empty($preload['imagesrcset']) ? ' imagesrcset="' . e((string) $preload['imagesrcset']) . '"' : '';
+        $fetch = !empty($preload['fetchpriority']) ? ' fetchpriority="' . e((string) $preload['fetchpriority']) . '"' : '';
+        $crossorigin = ($as === 'font') ? ' crossorigin' : '';
+        $preloadLinks .= '<link rel="preload" as="' . $as . '" href="' . $href . '"' . $type . $imagesrcset . $imagesizes . $fetch . $crossorigin . '>';
+    }
 
     $adminBar = $sessionUser
         ? '<div class="admin-bar">
-        <p>Zalogowano. Edycja cennika jest włączona.</p>
-        <a href="/cennik">Cennik</a>
+        <p>Zalogowano: <strong>' . e((string) $sessionUser) . '</strong></p>
+        <a href="/admin">Panel edycji</a>
+        <a href="/admin/konto">Konto</a>
         <form method="post" action="/wyloguj">
           <input type="hidden" name="csrf" value="' . e($csrf) . '">
           <button type="submit">Wyloguj</button>
@@ -238,35 +293,24 @@ function layout(array $opts): string
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="' . e($title) . '">
   <meta name="twitter:description" content="' . e($description) . '">
-  <link rel="icon" href="/img/ico.jpg" type="image/jpeg">
+  <link rel="icon" href="/img/ico.webp" type="image/webp">
+  <link rel="alternate icon" href="/img/ico.jpg" type="image/jpeg">
   <link rel="apple-touch-icon" href="/img/ico.jpg">
-  <link rel="stylesheet" href="/css/style.css?v=62">
+  ' . $preloadLinks . '
+  <link rel="stylesheet" href="/css/style.min.css?v=65">
   <script type="application/ld+json">' . $jsonLd . '</script>
 </head>
 <body>
   <a class="skip" href="#tresc">Przejdź do treści</a>
   ' . $adminBar . '
-  <div class="topbar">
-    <div class="wrap topbar-inner">
-      <p class="top-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.5h2.6l1.2 3-1.9 1.1a12.2 12.2 0 0 0 6.1 6.1l1.1-1.9 3 1.2v2.6a1.7 1.7 0 0 1-1.7 1.7A13.4 13.4 0 0 1 4.9 5.2a1.7 1.7 0 0 1 1.7-1.7z"/></svg>
-        <a href="tel:+48185412217">18 541 22 17</a>
-        <a href="tel:+48530770208">530 770 208</a>
-      </p>
-      <p class="top-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.8a6.2 6.2 0 0 0-6.2 6.2c0 4.6 6.2 11.2 6.2 11.2s6.2-6.6 6.2-11.2A6.2 6.2 0 0 0 12 2.8zm0 8.3a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z"/></svg>
-        Nowy Sącz, ul. Bora-Komorowskiego 22/1
-      </p>
-      <p class="top-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8.1V12l2.5 1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Poniedziałek – Piątek: 09:00 – 16:00
-      </p>
-    </div>
-  </div>
+  ' . render_topbar() . '
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="brand" href="/">
-        <img src="/img/logo_small.jpg" width="120" height="72" alt="Biuro Rachunkowe AS">
+        <picture>
+          <source type="image/webp" srcset="/img/logo_small.webp">
+          <img src="/img/logo_small.jpg" width="120" height="72" alt="Biuro Rachunkowe AS" decoding="async">
+        </picture>
       </a>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
       <nav id="menu" class="nav">' . $nav . '</nav>
@@ -279,18 +323,68 @@ function layout(array $opts): string
   ' . render_footer_cta($active) . '
   ' . render_site_footer(is_string($sessionUser) ? $sessionUser : null) . '
   ' . render_cookie_banner() . '
-  <script src="/js/site.js?v=19" defer></script>
+  <script src="/js/site.js?v=20" defer></script>
 </body>
 </html>';
 }
 
+function public_asset_exists(string $webPath): bool
+{
+    return is_file(app_root() . '/public' . $webPath);
+}
+
+/**
+ * Responsive <picture> for page media. Supports WebP srcset + JPEG fallback.
+ * opts: width, height, className, sizes, webp, webpSrcset, priority, deferSrc
+ */
 function page_media(string $src, array $opts = []): string
 {
     $width = (int) ($opts['width'] ?? 1200);
     $height = (int) ($opts['height'] ?? 800);
     $className = (string) ($opts['className'] ?? 'page-side-media');
+    $sizes = (string) ($opts['sizes'] ?? '(max-width: 900px) 92vw, min(560px, 42vw)');
+    $priority = !empty($opts['priority']);
+    $deferSrc = !empty($opts['deferSrc']);
+    $loading = $priority ? 'eager' : 'lazy';
+    $fetch = $priority ? ' fetchpriority="high"' : '';
+
+    $webp = (string) ($opts['webp'] ?? '');
+    if ($webp === '') {
+        $candidate = (string) preg_replace('/\.(jpe?g|png)$/i', '.webp', $src);
+        if ($candidate !== $src && public_asset_exists($candidate)) {
+            $webp = $candidate;
+        }
+    }
+    $webpSrcset = (string) ($opts['webpSrcset'] ?? '');
+    if ($webpSrcset === '' && $webp !== '') {
+        $webpSrcset = $webp . ' ' . $width . 'w';
+    }
+
+    $imgAttrs = 'width="' . $width . '" height="' . $height . '" alt="" decoding="async" loading="' . $loading . '"' . $fetch;
+    if ($deferSrc) {
+        $source = $webpSrcset !== ''
+            ? '<source type="image/webp" data-srcset="' . e($webpSrcset) . '" sizes="' . e($sizes) . '">'
+            : ($webp !== '' ? '<source type="image/webp" data-srcset="' . e($webp) . '">' : '');
+        $img = '<img data-src="' . e($src) . '"'
+            . ($webpSrcset !== '' ? '' : '')
+            . ' ' . $imgAttrs . ' src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'' . $width . '\' height=\'' . $height . '\'/%3E">';
+        return '<figure class="' . e($className) . '"><picture>' . $source . $img . '</picture></figure>';
+    }
+
+    if ($webp !== '' || $webpSrcset !== '') {
+        $source = $webpSrcset !== ''
+            ? '<source type="image/webp" srcset="' . e($webpSrcset) . '" sizes="' . e($sizes) . '">'
+            : '<source type="image/webp" srcset="' . e($webp) . '">';
+        return '<figure class="' . e($className) . '">
+    <picture>
+      ' . $source . '
+      <img src="' . e($src) . '" ' . $imgAttrs . ' sizes="' . e($sizes) . '">
+    </picture>
+  </figure>';
+    }
+
     return '<figure class="' . e($className) . '">
-    <img src="' . e($src) . '" width="' . $width . '" height="' . $height . '" alt="" loading="lazy" decoding="async">
+    <img src="' . e($src) . '" ' . $imgAttrs . '>
   </figure>';
 }
 
@@ -458,8 +552,8 @@ function render_home(array $ctx): string
 
     $main = '<section class="hero" data-hero-slider>
       <div class="hero-slides" aria-hidden="true">
-        <img class="hero-photo is-active" src="/img/hero-slide-1.webp" width="2048" height="682" alt="" fetchpriority="high">
-        <img class="hero-photo" src="/img/hero-slide-2.webp" width="2172" height="724" alt="" loading="lazy">
+        <img class="hero-photo is-active" src="/img/hero-slide-1.webp" srcset="/img/hero-slide-1-800.webp 800w, /img/hero-slide-1.webp 1600w" sizes="100vw" width="1600" height="532" alt="" fetchpriority="high" decoding="async">
+        <img class="hero-photo" src="/img/hero-slide-2.webp" srcset="/img/hero-slide-2-800.webp 800w, /img/hero-slide-2.webp 1600w" sizes="100vw" width="1600" height="534" alt="" loading="lazy" decoding="async">
       </div>
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="hero-blob hero-blob-left" aria-hidden="true"></div>
@@ -499,7 +593,10 @@ function render_home(array $ctx): string
     <section class="benefits" aria-labelledby="benefits-heading">
       <div class="wrap benefits-layout">
         <figure class="benefits-media">
-          <img src="/img/benefits-portrait.jpg" width="404" height="539" alt="" loading="lazy" decoding="async">
+          <picture>
+            <source type="image/webp" srcset="/img/benefits-portrait.webp">
+            <img src="/img/benefits-portrait.jpg" width="404" height="539" alt="" loading="lazy" decoding="async">
+          </picture>
         </figure>
         <div class="benefits-content">
           <div class="benefits-head">
@@ -516,6 +613,21 @@ function render_home(array $ctx): string
         'description' => 'Księgowość firm. Rzetelna obsługa księgowa, kadry i płace, rozliczenia PIT. Usługi księgowe, rozliczenia podatkowe. Zapraszamy Biuro Rachunkowe AS Nowy Sącz.',
         'active' => '/',
         'main' => $main,
+        'preload' => [
+            [
+                'href' => '/img/hero-slide-1.webp',
+                'as' => 'image',
+                'type' => 'image/webp',
+                'imagesrcset' => '/img/hero-slide-1-800.webp 800w, /img/hero-slide-1.webp 1600w',
+                'imagesizes' => '100vw',
+                'fetchpriority' => 'high',
+            ],
+            [
+                'href' => '/fonts/manrope-700.woff2',
+                'as' => 'font',
+                'type' => 'font/woff2',
+            ],
+        ],
     ]));
 }
 
@@ -536,116 +648,207 @@ function render_about(array $ctx): string
           <a class="button button-line" href="/kontakt">Kontakt</a>
         </p>
       </div>
-      ' . page_media('/img/office-1209640_1920.jpg', ['width' => 1920, 'height' => 1281]) . '
+      ' . page_media('/img/office-1209640_1920.jpg', [
+            'width' => 1440,
+            'height' => 961,
+            'webp' => '/img/office-1209640_1440.webp',
+            'webpSrcset' => '/img/office-1209640_960.webp 960w, /img/office-1209640_1440.webp 1440w',
+            'sizes' => '(max-width: 900px) 92vw, min(560px, 42vw)',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
 }
-function render_offer(array $ctx): string
+function offer_section_media(string $key, bool $deferSrc = false): string
+{
+    $common = [
+        'width' => 1280,
+        'height' => 720,
+        'sizes' => '(max-width: 900px) 92vw, min(640px, 48vw)',
+        'deferSrc' => $deferSrc,
+    ];
+    $map = [
+        'ksiegowosc' => page_media('/img/banner-doswiadczenie.jpg', $common + [
+            'className' => 'offer-block-media offer-block-media--desk',
+            'webp' => '/img/banner-doswiadczenie.webp',
+            'webpSrcset' => '/img/banner-doswiadczenie-640.webp 640w, /img/banner-doswiadczenie.webp 1280w',
+        ]),
+        'kadry' => page_media('/img/kadry-banner.jpg', $common + [
+            'className' => 'offer-block-media offer-block-media--people',
+            'webp' => '/img/kadry-banner.webp',
+            'webpSrcset' => '/img/kadry-banner-640.webp 640w, /img/kadry-banner.webp 1280w',
+        ]),
+        'pit' => page_media('/img/banner-doradca.jpg', $common + [
+            'className' => 'offer-block-media offer-block-media--docs',
+            'webp' => '/img/banner-doradca.webp',
+            'webpSrcset' => '/img/banner-doradca-640.webp 640w, /img/banner-doradca.webp 1280w',
+        ]),
+    ];
+    return $map[$key] ?? '';
+}
+
+function render_offer(array $ctx, ?array $offer = null): string
 {
     $icons = service_icons();
+    $offer = $offer ?? offer_defaults();
+    $labels = [
+        'ksiegowosc' => ['icon' => 'books', 'label' => $offer['sections']['ksiegowosc']['title']],
+        'kadry' => ['icon' => 'people', 'label' => $offer['sections']['kadry']['title']],
+        'pit' => ['icon' => 'doc', 'label' => $offer['sections']['pit']['title']],
+    ];
+
+    $tiles = '';
+    $panels = '';
+    $first = true;
+    foreach ($labels as $key => $meta) {
+        $active = $first ? ' is-active' : '';
+        $selected = $first ? 'true' : 'false';
+        $tabindex = $first ? '' : ' tabindex="-1"';
+        $tiles .= '<button class="offer-tile' . $active . '" type="button" role="tab" id="tab-' . e($key) . '" aria-controls="' . e($key) . '" aria-selected="' . $selected . '"' . $tabindex . ' data-offer-tab="' . e($key) . '">
+          <span class="offer-tile-icon">' . $icons[$meta['icon']] . '</span>
+          <span class="offer-tile-label">' . e($meta['label']) . '</span>
+        </button>';
+        $body = sanitize_offer_html((string) $offer['sections'][$key]['html']);
+        $panels .= '<section class="offer-block offer-panel' . $active . '" id="' . e($key) . '" role="tabpanel" aria-labelledby="tab-' . e($key) . '" data-offer-panel="' . e($key) . '"' . ($first ? '' : ' hidden') . '>
+        ' . offer_section_media($key, !$first) . '
+        <h2>' . e((string) $offer['sections'][$key]['title']) . '</h2>
+        <div class="offer-richtext">' . $body . '</div>
+      </section>';
+        $first = false;
+    }
+
     $page = subpage(
         'Oferta',
         'Księgowość, kadry i płace oraz rozliczenia PIT. Biuro Rachunkowe AS w Nowym Sączu.',
         '/oferta',
-        '<p class="lead">Nasze usługi:</p>
+        '<p class="lead">' . e((string) $offer['lead']) . '</p>
       <div class="offer-tabs" data-offer-tabs>
-      <div class="offer-tiles" role="tablist" aria-label="Usługi">
-        <button class="offer-tile is-active" type="button" role="tab" id="tab-ksiegowosc" aria-controls="ksiegowosc" aria-selected="true" data-offer-tab="ksiegowosc">
-          <span class="offer-tile-icon">' . $icons['books'] . '</span>
-          <span class="offer-tile-label">Księgowość</span>
-        </button>
-        <button class="offer-tile" type="button" role="tab" id="tab-kadry" aria-controls="kadry" aria-selected="false" tabindex="-1" data-offer-tab="kadry">
-          <span class="offer-tile-icon">' . $icons['people'] . '</span>
-          <span class="offer-tile-label">Kadry i płace</span>
-        </button>
-        <button class="offer-tile" type="button" role="tab" id="tab-pit" aria-controls="pit" aria-selected="false" tabindex="-1" data-offer-tab="pit">
-          <span class="offer-tile-icon">' . $icons['doc'] . '</span>
-          <span class="offer-tile-label">Rozliczenia PIT</span>
-        </button>
-      </div>
-      <section class="offer-block offer-panel is-active" id="ksiegowosc" role="tabpanel" aria-labelledby="tab-ksiegowosc" data-offer-panel="ksiegowosc">
-        ' . page_media('/img/banner-doswiadczenie.jpg', ['width' => 1280, 'height' => 720, 'className' => 'offer-block-media offer-block-media--desk']) . '
-        <h2>Księgowość</h2>
-        <p>Nasza oferta skierowana jest głównie do małych i średnich przedsiębiorstw. Uwalniamy Państwa od ciężaru prowadzenia księgowości, gwarantując dyskrecję, terminowość, sumienność i rzetelność zgodnie z obowiązującymi przepisami. Przejmując na siebie ciężar kontaktów z urzędami oszczędzamy Państwa czas i pieniądze.</p>
-        <p>Biuro Rachunkowe AS oferuje kompleksową obsługę księgową dla małych i średnich podmiotów gospodarczych o różnym profilu działalności i formie prawnej.</p>
-        <p>Świadczymy profesjonalne usługi księgowe w zakresie:</p>
-        <ul>
-          <li>prowadzenia pełnej księgowości (Księgi Handlowe),</li>
-          <li>prowadzenia księgowości uproszczonej (Podatkowe Księgi Przychodów i Rozchodów, Ryczałt),</li>
-          <li>Ewidencji środków trwałych i wyposażenia.</li>
-          <li>Ewidencji zakupów i sprzedaży dla potrzeb podatku VAT,</li>
-          <li>Przygotowania deklaracji podatkowych PIT, VAT, CIT, PFRON i innych,</li>
-          <li>Przygotowania deklaracji dla ZUS i ich przesyłu elektronicznego,</li>
-          <li>Sporządzania rocznych sprawozdań finansowych,</li>
-          <li>Przygotowania rocznych rozliczeń podatkowych,</li>
-          <li>Realizowanie indywidualnych potrzeb Klienta z zakresu księgowości,</li>
-        </ul>
-        <p>W ramach kompleksowej obsługi Biuro Rachunkowe AS zapewnia Klientom:</p>
-        <ul>
-          <li>reprezentowanie ich przed urzędami skarbowymi, ZUS, KRS, GUS, PFRON</li>
-          <li>bezpłatną pomoc w założeniu działalności gospodarczej osobom fizycznym (wypełnianiu deklaracji zgłoszeniowych, wniosków rejestracyjnych)</li>
-          <li>możliwość łączności z nami za pośrednictwem serwera</li>
-          <li>dużą dyspozycyjność i indywidualne podejście do każdego klienta.</li>
-        </ul>
-        <p>Biuro przejmuje odpowiedzialność za terminowe przygotowanie wszelkich niezbędnych dokumentów do rozliczeń z ZUS-em, Urzędem Skarbowym, GUS-em, PFRON-em.</p>
-      </section>
-      <section class="offer-block offer-panel" id="kadry" role="tabpanel" aria-labelledby="tab-kadry" data-offer-panel="kadry">
-        ' . page_media('/img/kadry-banner.jpg', ['width' => 1600, 'height' => 900, 'className' => 'offer-block-media offer-block-media--people']) . '
-        <h2>Kadry i płace</h2>
-        <p>Dla tych z Państwa , którzy całość spraw związanych prowadzeniem kadr i płac chcą przekazać do obsługi przez biuro rachunkowe możemy zaoferować:</p>
-        <ul>
-          <li>kompleksową obsługę kadrowo-płacową,</li>
-          <li>prowadzenie kart wynagrodzeń</li>
-          <li>przygotowywanie dokumentów związanych z zatrudnieniem i rozwiązaniem stosunku pracy,</li>
-          <li>prowadzenie akt osobowych pracowników,</li>
-          <li>prowadzenie ewidencji badań wstępnych, okresowych, kontrolnych,</li>
-          <li>ewidencjonowanie czasu pracy i nieobecności,</li>
-          <li>obsługa zatrudnienia na podstawie umów cywilnoprawnych (przygotowywanie umów, rachunków),</li>
-          <li>sporzadzenie list płac,</li>
-          <li>sporządzanie i przekazywanie deklaracji rozliczeniowych do ZUS i US, PFRON</li>
-          <li>sporzadzenie deklaracji i zaświadczeń dla pracowników,</li>
-          <li>obliczanie należnych składek ubezpieczeniowych, zaliczek na podatek od wynagrodzeń i umów cywilnoprawnych,</li>
-        </ul>
-        <p>Usługi kadrowo-płacowe prowadzimy przy wsparciu licencjonowanych systemów informatycznych.</p>
-      </section>
-      <section class="offer-block offer-panel" id="pit" role="tabpanel" aria-labelledby="tab-pit" data-offer-panel="pit">
-        ' . page_media('/img/banner-doradca.jpg', ['width' => 1280, 'height' => 720, 'className' => 'offer-block-media offer-block-media--docs']) . '
-        <h2>Rozliczenia PIT</h2>
-        <p><strong>Rozliczanie dochodów za 2023 rok – zeznania roczne PIT-36, PIT-36L PIT-37 oraz PIT-28</strong></p>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col"></th>
-                <th scope="col">Rozliczenie jednej osoby</th>
-                <th scope="col">Rozliczenie wspólne małżonków<br>Rozliczenie wspólne z dzieckiem</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th scope="row">Jeden dokument potwierdzający źródło dochodów – PIT-11</th>
-                <td>60,00 zł</td>
-                <td>80,00 zł</td>
-              </tr>
-              <tr>
-                <th scope="row">PIT-36 / PIT-28 działalność gospodarcza, praca za granicą</th>
-                <td>120,00 zł</td>
-                <td>120,00 zł</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="note">Podane ceny są cenami brutto.</p>
-        <p>Oferta dla naszych klientów:</p>
-        <ul>
-          <li>jeżeli zeznanie roczne opiera się tylko na wynikach z działalności gospodarczej, którą rozliczamy i nie występują żadne doliczenia, odliczenia i ulgi, to wówczas sporządzamy je w ramach obsługi księgowej firmy, bez żadnych dodatkowych opłat</li>
-          <li>w pozostałych przypadkach obowiązują powyższe ceny pomniejszone o 10,00 zł</li>
-        </ul>
-      </section>
+      <div class="offer-tiles" role="tablist" aria-label="Usługi">' . $tiles . '</div>
+      ' . $panels . '
       </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
+}
+
+function admin_edit_choices(array $offer): array
+{
+    return [
+        [
+            'href' => '/admin/oferta/lead',
+            'label' => 'Nagłówek oferty',
+            'hint' => 'Krótki tekst nad zakładkami (np. „Nasze usługi:”).',
+        ],
+        [
+            'href' => '/admin/oferta/ksiegowosc',
+            'label' => (string) $offer['sections']['ksiegowosc']['title'],
+            'hint' => 'Treść zakładki Księgowość.',
+        ],
+        [
+            'href' => '/admin/oferta/kadry',
+            'label' => (string) $offer['sections']['kadry']['title'],
+            'hint' => 'Treść zakładki Kadry i płace.',
+        ],
+        [
+            'href' => '/admin/oferta/pit',
+            'label' => (string) $offer['sections']['pit']['title'],
+            'hint' => 'Treść zakładki Rozliczenia PIT (tekst i tabela).',
+        ],
+        [
+            'href' => '/cennik',
+            'label' => 'Cennik',
+            'hint' => 'Dodawanie, zmiana i usuwanie pozycji cennika.',
+        ],
+        [
+            'href' => '/admin/kontakt',
+            'label' => 'Dane kontaktowe',
+            'hint' => 'Telefony, e-mail, adres i godziny (topbar, stopka, kontakt).',
+        ],
+        [
+            'href' => '/admin/konto',
+            'label' => 'Konto administratora',
+            'hint' => 'Zmiana loginu i hasła (wymaga obecnego hasła).',
+        ],
+    ];
+}
+
+function render_admin_hub(array $ctx, array $offer): string
+{
+    $cards = '';
+    foreach (admin_edit_choices($offer) as $item) {
+        $cards .= '<a class="admin-hub-card" href="' . e($item['href']) . '">
+        <span class="admin-hub-card-label">' . e($item['label']) . '</span>
+        <span class="admin-hub-card-hint">' . e($item['hint']) . '</span>
+      </a>';
+    }
+
+    $main = '<section class="admin-hub wrap">
+    <div class="admin-hub-panel">
+      <p class="eyebrow">Panel edycji</p>
+      <h1>Co chcesz edytować?</h1>
+      <p class="admin-hub-intro">Wybierz jedną treść. Otworzy się edytor tylko dla niej — bez długiego przewijania.</p>
+      <div class="admin-hub-grid">' . $cards . '</div>
+    </div>
+  </section>';
+
+    return layout(array_merge($ctx, [
+        'title' => 'Panel edycji - Biuro rachunkowe AS Nowy Sącz - Księgowość',
+        'description' => 'Wybór treści do edycji w panelu Biura Rachunkowego AS.',
+        'active' => '',
+        'main' => $main,
+    ]));
+}
+
+function render_offer_part_editor(array $ctx, array $offer, string $part): string
+{
+    $csrf = e((string) $ctx['csrf']);
+    $back = '<p class="offer-admin-back"><a href="/admin">← Wróć do wyboru</a></p>';
+
+    if ($part === 'lead') {
+        $main = '<article class="wrap offer-admin">
+    ' . $back . '
+    <h1>Nagłówek oferty</h1>
+    <p>Tekst wyświetlany nad zakładkami na stronie oferty.</p>
+    <form class="offer-admin-form" method="post" action="/admin/oferta/lead">
+      <input type="hidden" name="csrf" value="' . $csrf . '">
+      <label class="offer-admin-lead">Nagłówek
+        <input name="lead" required maxlength="200" value="' . e((string) $offer['lead']) . '">
+      </label>
+      <p class="offer-admin-actions">
+        <button type="submit" class="button">Zapisz</button>
+        <a class="button button-line" href="/admin">Anuluj</a>
+      </p>
+    </form>
+  </article>';
+    } else {
+        $section = $offer['sections'][$part];
+        $main = '<article class="wrap offer-admin">
+    ' . $back . '
+    <h1>Edycja: ' . e((string) $section['title']) . '</h1>
+    <p>Edytor wizualny — zapisz, gdy skończysz.</p>
+    <form class="offer-admin-form" method="post" action="/admin/oferta/' . e($part) . '" data-offer-admin-form>
+      <input type="hidden" name="csrf" value="' . $csrf . '">
+      <label class="offer-admin-title">Tytuł sekcji
+        <input name="title_' . e($part) . '" required maxlength="120" value="' . e((string) $section['title']) . '">
+      </label>
+      <label class="offer-admin-body">Treść
+        <textarea id="editor-' . e($part) . '" name="html_' . e($part) . '" rows="18" class="offer-admin-textarea">' . e((string) $section['html']) . '</textarea>
+      </label>
+      <p class="offer-admin-actions">
+        <button type="submit" class="button">Zapisz</button>
+        <a class="button button-line" href="/admin">Anuluj</a>
+      </p>
+    </form>
+  </article>
+  <script src="/vendor/tinymce/tinymce.min.js" referrerpolicy="origin"></script>
+  <script src="/js/offer-admin.js?v=2" defer></script>';
+    }
+
+    return layout(array_merge($ctx, [
+        'title' => 'Edycja treści - Biuro rachunkowe AS Nowy Sącz - Księgowość',
+        'description' => 'Edycja wybranej treści oferty Biura Rachunkowego AS.',
+        'active' => '',
+        'main' => $main,
+    ]));
 }
 
 function price_editor(array $items, string $csrf): string
@@ -668,6 +871,7 @@ function price_editor(array $items, string $csrf): string
     }
 
     return '<section class="editor">
+    <p class="offer-admin-back"><a href="/admin">← Wróć do wyboru</a></p>
     <h2>Edycja pozycji</h2>
     <p>Pozycja na stronie wyświetla się jako nazwa i cena w jednym wierszu. Zmiany są od razu widoczne dla odwiedzających.</p>
     <ul class="editor-list">' . $rows . '</ul>
@@ -711,7 +915,12 @@ function render_prices(array $ctx, array $items): string
         </div>
         ' . $editor . '
       </div>
-      ' . page_media('/img/hero-office.jpg', ['width' => 1280, 'height' => 720]) . '
+      ' . page_media('/img/hero-office.jpg', [
+            'width' => 1280,
+            'height' => 720,
+            'webp' => '/img/hero-office.webp',
+            'webpSrcset' => '/img/hero-office-640.webp 640w, /img/hero-office.webp 1280w',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
@@ -740,7 +949,13 @@ function render_remote(array $ctx): string
           <p class="hero-actions"><a class="button" href="/kontakt">Kontakt <span aria-hidden="true">→</span></a></p>
         </div>
       </div>
-      ' . page_media('/img/zdalna-ksiegowosc.jpg', ['width' => 900, 'height' => 1200, 'className' => 'page-side-media page-side-media--remote']) . '
+      ' . page_media('/img/zdalna-ksiegowosc.jpg', [
+            'width' => 720,
+            'height' => 960,
+            'className' => 'page-side-media page-side-media--remote',
+            'webp' => '/img/zdalna-ksiegowosc.webp',
+            'sizes' => '(max-width: 900px) 92vw, min(420px, 36vw)',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
@@ -750,26 +965,36 @@ const MAP_EMBED_SRC = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d258
 
 function render_contact(array $ctx): string
 {
+    $c = site_contact();
+    $desc = 'Biuro Rachunkowe AS ' . $c['owner'] . ', ' . $c['street'] . ', ' . $c['postal_city']
+        . '. Tel. ' . $c['phone'] . ', ' . $c['phone_mobile'] . ', ' . $c['email'] . '.';
     $page = subpage(
         'Kontakt',
-        'Biuro Rachunkowe AS Aneta Stanik, ul. Bora-Komorowskiego 22/1, 33-300 Nowy Sącz. Tel. 18 541 22 17, 530 770 208, biuro@biuro-as.pl.',
+        $desc,
         '/kontakt',
-        page_media('/img/1-6.jpg', ['width' => 1900, 'height' => 1010, 'className' => 'page-banner page-banner--contact']) . '
+        page_media('/img/1-6.jpg', [
+            'width' => 1600,
+            'height' => 851,
+            'className' => 'page-banner page-banner--contact',
+            'webp' => '/img/1-6.webp',
+            'webpSrcset' => '/img/1-6-960.webp 960w, /img/1-6.webp 1600w',
+            'sizes' => '100vw',
+        ]) . '
     <div class="contact-grid">
       <div class="page-copy">
-        <p><strong>Biuro Rachunkowe AS</strong><br><em>Aneta Stanik</em></p>
+        <p><strong>Biuro Rachunkowe AS</strong><br><em>' . e($c['owner']) . '</em></p>
         <p>Skontaktuj się z nami – Biuro Rachunkowe AS</p>
-        <p>Szukasz niezawodnego partnera w zakresie księgowości w Nowym Sączu?<br>
+        <p>Szukasz niezawodnego partnera w zakresie księgowości w ' . e($c['city_short']) . '?<br>
         Biuro Rachunkowe AS jest tu, by Ci pomóc.<br>
         Zapraszamy do bezpośredniego kontaktu, aby omówić, w jaki sposób możemy wspierać Twój biznes.</p>
         <p><strong>Adres:</strong><br>
-        Biuro Rachunkowe AS Aneta Stanik<br>
-        ul. Bora-Komorowskiego 22/1<br>
-        33-300 Nowy Sącz woj. Małopolskie</p>
+        Biuro Rachunkowe AS ' . e($c['owner']) . '<br>
+        ' . e($c['street']) . '<br>
+        ' . e($c['postal_city'] . ' ' . $c['region']) . '</p>
         <p><strong>Kontakt telefoniczny:</strong><br>
-        Telefon stacjonarny: <a href="tel:+48185412217">18 541 22 17</a><br>
-        Telefon komórkowy: <a href="tel:+48530770208">530 770 208</a></p>
-        <p>E-mail: <a href="mailto:biuro@biuro-as.pl">biuro@biuro-as.pl</a></p>
+        Telefon stacjonarny: <a href="' . e(contact_tel_href($c['phone'])) . '">' . e($c['phone']) . '</a><br>
+        Telefon komórkowy: <a href="' . e(contact_tel_href($c['phone_mobile'])) . '">' . e($c['phone_mobile']) . '</a></p>
+        <p>E-mail: <a href="mailto:' . e($c['email']) . '">' . e($c['email']) . '</a></p>
         <p>Nasz zespół ekspertów księgowych jest dostępny, aby odpowiedzieć na Twoje pytania i zaproponować rozwiązania dostosowane do potrzeb Twojego biznesu. Niezależnie od tego, czy potrzebujesz pomocy w prowadzeniu księgowości, czy wsparcia w zakresie doradztwa finansowego, Biuro Rachunkowe AS jest gotowe, aby Cię wspierać.</p>
         <p>Zachęcamy do kontaktu bez względu na formę – czy to osobiście, telefonicznie, czy przez e-mail. Jesteśmy tu, aby ułatwić Ci prowadzenie biznesu, oferując profesjonalne usługi księgowe na najwyższym poziomie.</p>
       </div>
@@ -783,6 +1008,89 @@ function render_contact(array $ctx): string
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
+}
+
+function render_contact_editor(array $ctx, array $contact): string
+{
+    $csrf = e((string) $ctx['csrf']);
+    $fields = [
+        'phone' => ['Telefon stacjonarny', 40],
+        'phone_mobile' => ['Telefon komórkowy', 40],
+        'email' => ['E-mail', 160],
+        'street' => ['Adres (ulica) — topbar / kontakt', 160],
+        'street_footer' => ['Adres (ulica) — stopka', 160],
+        'postal_city' => ['Kod i miasto (np. 33-300 Nowy Sącz)', 160],
+        'city_short' => ['Miasto (krótko)', 80],
+        'region' => ['Województwo / region', 80],
+        'hours' => ['Godziny otwarcia (tekst)', 160],
+        'hours_opens' => ['Godzina otwarcia (np. 09:00)', 8],
+        'hours_closes' => ['Godzina zamknięcia (np. 16:00)', 8],
+        'owner' => ['Właściciel / osoba na kontakcie', 80],
+    ];
+    $inputs = '';
+    foreach ($fields as $name => [$label, $max]) {
+        $inputs .= '<label class="offer-admin-lead">' . e($label) . '
+        <input name="' . e($name) . '" required maxlength="' . (int) $max . '" value="' . e((string) $contact[$name]) . '">
+      </label>';
+    }
+
+    $main = '<article class="wrap offer-admin">
+    <p class="offer-admin-back"><a href="/admin">← Wróć do wyboru</a></p>
+    <h1>Dane kontaktowe</h1>
+    <p>Prosty formularz — zmiany widać od razu w topbarze, stopce i na stronie kontaktu.</p>
+    <form class="offer-admin-form" method="post" action="/admin/kontakt">
+      <input type="hidden" name="csrf" value="' . $csrf . '">
+      ' . $inputs . '
+      <p class="offer-admin-actions">
+        <button type="submit" class="button">Zapisz dane</button>
+        <a class="button button-line" href="/admin">Anuluj</a>
+      </p>
+    </form>
+  </article>';
+
+    return layout(array_merge($ctx, [
+        'title' => 'Dane kontaktowe - Biuro rachunkowe AS Nowy Sącz - Księgowość',
+        'description' => 'Edycja danych kontaktowych Biura Rachunkowego AS.',
+        'active' => '',
+        'main' => $main,
+    ]));
+}
+
+function render_account_editor(array $ctx, string $username): string
+{
+    $csrf = e((string) $ctx['csrf']);
+    $min = PASSWORD_MIN_LENGTH;
+    $main = '<article class="wrap offer-admin">
+    <p class="offer-admin-back"><a href="/admin">← Wróć do wyboru</a></p>
+    <h1>Konto administratora</h1>
+    <p>Zmiana loginu i hasła. Wymagane jest obecne hasło; nowe hasło potwierdź drugi raz (min. ' . (int) $min . ' znaków).</p>
+    <form class="offer-admin-form" method="post" action="/admin/konto" autocomplete="off">
+      <input type="hidden" name="csrf" value="' . $csrf . '">
+      <label class="offer-admin-lead">Obecne hasło
+        <input type="password" name="current_password" required autocomplete="current-password">
+      </label>
+      <label class="offer-admin-lead">Nowy login
+        <input type="text" name="new_username" required maxlength="80" pattern="[a-zA-Z0-9._@\-]+" value="' . e($username) . '" autocomplete="username">
+      </label>
+      <label class="offer-admin-lead">Nowe hasło
+        <input type="password" name="new_password" required minlength="' . (int) $min . '" autocomplete="new-password">
+      </label>
+      <label class="offer-admin-lead">Potwierdź nowe hasło
+        <input type="password" name="new_password_confirm" required minlength="' . (int) $min . '" autocomplete="new-password">
+      </label>
+      <p class="offer-admin-actions">
+        <button type="submit" class="button">Zapisz login i hasło</button>
+        <a class="button button-line" href="/admin">Anuluj</a>
+      </p>
+    </form>
+  </article>';
+
+    return layout(array_merge($ctx, [
+        'title' => 'Konto administratora - Biuro rachunkowe AS Nowy Sącz - Księgowość',
+        'description' => 'Zmiana loginu i hasła administratora Biura Rachunkowego AS.',
+        'active' => '',
+        'main' => $main,
+    ]));
 }
 
 function render_privacy(array $ctx): string
@@ -879,7 +1187,12 @@ function render_advisor(array $ctx): string
         <p>' . e(ADVISOR_TEXT) . '</p>
         <p class="hero-actions"><a class="button" href="/oferta">Nasza oferta <span aria-hidden="true">→</span></a></p>
       </div>
-      ' . page_media('/img/banner-doradca.jpg', ['width' => 1280, 'height' => 720]) . '
+      ' . page_media('/img/banner-doradca.jpg', [
+            'width' => 1280,
+            'height' => 720,
+            'webp' => '/img/banner-doradca.webp',
+            'webpSrcset' => '/img/banner-doradca-640.webp 640w, /img/banner-doradca.webp 1280w',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
@@ -896,7 +1209,12 @@ function render_support(array $ctx): string
         <p>' . e(ADVISOR_TEXT) . '</p>
         <p class="hero-actions"><a class="button" href="/oferta">Nasza oferta <span aria-hidden="true">→</span></a></p>
       </div>
-      ' . page_media('/img/banner-wsparcie.jpg', ['width' => 1280, 'height' => 720]) . '
+      ' . page_media('/img/banner-wsparcie.jpg', [
+            'width' => 1280,
+            'height' => 720,
+            'webp' => '/img/banner-wsparcie.webp',
+            'webpSrcset' => '/img/banner-wsparcie-640.webp 640w, /img/banner-wsparcie.webp 1280w',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
@@ -913,7 +1231,12 @@ function render_professional(array $ctx): string
         <p>Stosujemy sprawdzone systemy obsługi księgowej, zawsze indywidualnie dostosowane do konkretnych potrzeb klienta. Nasze motto: „Ty rozwijasz swój biznes – my księgujemy!”</p>
         <p class="hero-actions"><a class="button" href="/oferta">Nasza oferta <span aria-hidden="true">→</span></a></p>
       </div>
-      ' . page_media('/img/shutterstock_77448604.jpg', ['width' => 1600, 'height' => 799]) . '
+      ' . page_media('/img/shutterstock_77448604.jpg', [
+            'width' => 1200,
+            'height' => 599,
+            'webp' => '/img/shutterstock_77448604.webp',
+            'webpSrcset' => '/img/shutterstock_77448604-800.webp 800w, /img/shutterstock_77448604.webp 1200w',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
@@ -925,8 +1248,8 @@ function render_login(array $ctx, string $error = ''): string
         ? '<p class="form-error" role="alert">' . e($error) . '</p>'
         : '';
     $main = '<article class="wrap narrow">
-    <h1>Edycja cennika</h1>
-    <p>Zaloguj się, aby dodawać, zmieniać i usuwać pozycje cennika.</p>
+    <h1>Panel edycji</h1>
+    <p>Zaloguj się, a potem wybierz, co chcesz edytować.</p>
     ' . $message . '
     <form class="login-form" method="post" action="/logowanie">
       <input type="hidden" name="csrf" value="' . e((string) $ctx['csrf']) . '">

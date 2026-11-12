@@ -5,6 +5,9 @@ require_once __DIR__ . '/escape.php';
 require_once __DIR__ . '/http.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/sanitize.php';
+require_once __DIR__ . '/offer.php';
+require_once __DIR__ . '/contact.php';
 require_once __DIR__ . '/render.php';
 
 function app_root(): string
@@ -17,6 +20,7 @@ function load_config(): array
     $defaults = [
         'admin_username' => 'admin',
         'admin_password' => '',
+        'admin_password_hash' => '',
         'site_url' => 'https://www.biuro-as.pl',
         'trust_proxy' => 0,
         'data_path' => '',
@@ -36,6 +40,10 @@ function load_config(): array
     $envPass = getenv('ADMIN_PASSWORD');
     if (is_string($envPass) && $envPass !== '') {
         $config['admin_password'] = $envPass;
+    }
+    $envHash = getenv('ADMIN_PASSWORD_HASH');
+    if (is_string($envHash) && $envHash !== '') {
+        $config['admin_password_hash'] = $envHash;
     }
     $envUser = getenv('ADMIN_USERNAME');
     if (is_string($envUser) && $envUser !== '') {
@@ -57,6 +65,7 @@ function load_config(): array
     $config['site_url'] = rtrim((string) $config['site_url'], '/');
     $config['admin_username'] = (string) $config['admin_username'];
     $config['admin_password'] = (string) $config['admin_password'];
+    $config['admin_password_hash'] = (string) $config['admin_password_hash'];
     $config['trust_proxy'] = (int) $config['trust_proxy'];
     $config['data_path'] = (string) $config['data_path'];
 
