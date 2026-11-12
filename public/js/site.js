@@ -52,13 +52,7 @@ if (heroSlider) {
     const setSlide = (next) => {
       index = (next + slides.length) % slides.length;
       slides.forEach((slide, slideIndex) => {
-        const active = slideIndex === index;
-        slide.classList.toggle("is-active", active);
-        if (active) {
-          slide.style.animation = "none";
-          void slide.offsetWidth;
-          slide.style.animation = "";
-        }
+        slide.classList.toggle("is-active", slideIndex === index);
       });
       [...dots.children].forEach((dot, dotIndex) => {
         dot.setAttribute("aria-selected", dotIndex === index ? "true" : "false");
@@ -269,6 +263,20 @@ if (offerTabsRoot) {
   const panels = [...offerTabsRoot.querySelectorAll("[data-offer-panel]")];
   const validIds = new Set(tabs.map((tab) => tab.getAttribute("data-offer-tab")));
 
+  const hydrateDeferredMedia = (panel) => {
+    panel.querySelectorAll("source[data-srcset]").forEach((source) => {
+      source.setAttribute("srcset", source.getAttribute("data-srcset") || "");
+      source.removeAttribute("data-srcset");
+    });
+    panel.querySelectorAll("img[data-src]").forEach((img) => {
+      const src = img.getAttribute("data-src");
+      if (src) {
+        img.setAttribute("src", src);
+        img.removeAttribute("data-src");
+      }
+    });
+  };
+
   const activateOfferTab = (id, { updateHash = true } = {}) => {
     if (!validIds.has(id)) id = "ksiegowosc";
     tabs.forEach((tab) => {
@@ -281,6 +289,7 @@ if (offerTabsRoot) {
       const selected = panel.getAttribute("data-offer-panel") === id;
       panel.classList.toggle("is-active", selected);
       panel.hidden = !selected;
+      if (selected) hydrateDeferredMedia(panel);
     });
     if (updateHash) {
       const next = `#${id}`;

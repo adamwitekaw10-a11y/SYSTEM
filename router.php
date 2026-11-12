@@ -56,7 +56,7 @@ if ($uri !== '/' && is_file($publicFile)) {
     if (isset($types[$ext])) {
         header('Content-Type: ' . $types[$ext]);
     }
-    header('Cache-Control: public, max-age=86400');
+    header('Cache-Control: public, max-age=31536000, immutable');
     header('X-Content-Type-Options: nosniff');
     readfile($publicFile);
     return true;

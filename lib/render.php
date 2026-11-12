@@ -244,6 +244,20 @@ function layout(array $opts): string
     $canonical = absolute_url($active !== '' ? $active : '/');
     $ogImage = site_url_cfg() . '/img/logo_small.jpg';
     $jsonLd = local_business_json();
+    $preloadLinks = '';
+    foreach ($opts['preload'] ?? [] as $preload) {
+        if (!is_array($preload) || empty($preload['href'])) {
+            continue;
+        }
+        $as = e((string) ($preload['as'] ?? 'image'));
+        $href = e((string) $preload['href']);
+        $type = !empty($preload['type']) ? ' type="' . e((string) $preload['type']) . '"' : '';
+        $imagesizes = !empty($preload['imagesizes']) ? ' imagesizes="' . e((string) $preload['imagesizes']) . '"' : '';
+        $imagesrcset = !empty($preload['imagesrcset']) ? ' imagesrcset="' . e((string) $preload['imagesrcset']) . '"' : '';
+        $fetch = !empty($preload['fetchpriority']) ? ' fetchpriority="' . e((string) $preload['fetchpriority']) . '"' : '';
+        $crossorigin = ($as === 'font') ? ' crossorigin' : '';
+        $preloadLinks .= '<link rel="preload" as="' . $as . '" href="' . $href . '"' . $type . $imagesrcset . $imagesizes . $fetch . $crossorigin . '>';
+    }
 
     $adminBar = $sessionUser
         ? '<div class="admin-bar">
@@ -279,9 +293,11 @@ function layout(array $opts): string
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="' . e($title) . '">
   <meta name="twitter:description" content="' . e($description) . '">
-  <link rel="icon" href="/img/ico.jpg" type="image/jpeg">
+  <link rel="icon" href="/img/ico.webp" type="image/webp">
+  <link rel="alternate icon" href="/img/ico.jpg" type="image/jpeg">
   <link rel="apple-touch-icon" href="/img/ico.jpg">
-  <link rel="stylesheet" href="/css/style.css?v=64">
+  ' . $preloadLinks . '
+  <link rel="stylesheet" href="/css/style.min.css?v=65">
   <script type="application/ld+json">' . $jsonLd . '</script>
 </head>
 <body>
@@ -291,7 +307,10 @@ function layout(array $opts): string
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="brand" href="/">
-        <img src="/img/logo_small.jpg" width="120" height="72" alt="Biuro Rachunkowe AS">
+        <picture>
+          <source type="image/webp" srcset="/img/logo_small.webp">
+          <img src="/img/logo_small.jpg" width="120" height="72" alt="Biuro Rachunkowe AS" decoding="async">
+        </picture>
       </a>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu">Menu</button>
       <nav id="menu" class="nav">' . $nav . '</nav>
@@ -304,18 +323,68 @@ function layout(array $opts): string
   ' . render_footer_cta($active) . '
   ' . render_site_footer(is_string($sessionUser) ? $sessionUser : null) . '
   ' . render_cookie_banner() . '
-  <script src="/js/site.js?v=19" defer></script>
+  <script src="/js/site.js?v=20" defer></script>
 </body>
 </html>';
 }
 
+function public_asset_exists(string $webPath): bool
+{
+    return is_file(app_root() . '/public' . $webPath);
+}
+
+/**
+ * Responsive <picture> for page media. Supports WebP srcset + JPEG fallback.
+ * opts: width, height, className, sizes, webp, webpSrcset, priority, deferSrc
+ */
 function page_media(string $src, array $opts = []): string
 {
     $width = (int) ($opts['width'] ?? 1200);
     $height = (int) ($opts['height'] ?? 800);
     $className = (string) ($opts['className'] ?? 'page-side-media');
+    $sizes = (string) ($opts['sizes'] ?? '(max-width: 900px) 92vw, min(560px, 42vw)');
+    $priority = !empty($opts['priority']);
+    $deferSrc = !empty($opts['deferSrc']);
+    $loading = $priority ? 'eager' : 'lazy';
+    $fetch = $priority ? ' fetchpriority="high"' : '';
+
+    $webp = (string) ($opts['webp'] ?? '');
+    if ($webp === '') {
+        $candidate = (string) preg_replace('/\.(jpe?g|png)$/i', '.webp', $src);
+        if ($candidate !== $src && public_asset_exists($candidate)) {
+            $webp = $candidate;
+        }
+    }
+    $webpSrcset = (string) ($opts['webpSrcset'] ?? '');
+    if ($webpSrcset === '' && $webp !== '') {
+        $webpSrcset = $webp . ' ' . $width . 'w';
+    }
+
+    $imgAttrs = 'width="' . $width . '" height="' . $height . '" alt="" decoding="async" loading="' . $loading . '"' . $fetch;
+    if ($deferSrc) {
+        $source = $webpSrcset !== ''
+            ? '<source type="image/webp" data-srcset="' . e($webpSrcset) . '" sizes="' . e($sizes) . '">'
+            : ($webp !== '' ? '<source type="image/webp" data-srcset="' . e($webp) . '">' : '');
+        $img = '<img data-src="' . e($src) . '"'
+            . ($webpSrcset !== '' ? '' : '')
+            . ' ' . $imgAttrs . ' src="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'' . $width . '\' height=\'' . $height . '\'/%3E">';
+        return '<figure class="' . e($className) . '"><picture>' . $source . $img . '</picture></figure>';
+    }
+
+    if ($webp !== '' || $webpSrcset !== '') {
+        $source = $webpSrcset !== ''
+            ? '<source type="image/webp" srcset="' . e($webpSrcset) . '" sizes="' . e($sizes) . '">'
+            : '<source type="image/webp" srcset="' . e($webp) . '">';
+        return '<figure class="' . e($className) . '">
+    <picture>
+      ' . $source . '
+      <img src="' . e($src) . '" ' . $imgAttrs . ' sizes="' . e($sizes) . '">
+    </picture>
+  </figure>';
+    }
+
     return '<figure class="' . e($className) . '">
-    <img src="' . e($src) . '" width="' . $width . '" height="' . $height . '" alt="" loading="lazy" decoding="async">
+    <img src="' . e($src) . '" ' . $imgAttrs . '>
   </figure>';
 }
 
@@ -483,8 +552,8 @@ function render_home(array $ctx): string
 
     $main = '<section class="hero" data-hero-slider>
       <div class="hero-slides" aria-hidden="true">
-        <img class="hero-photo is-active" src="/img/hero-slide-1.webp" width="2048" height="682" alt="" fetchpriority="high">
-        <img class="hero-photo" src="/img/hero-slide-2.webp" width="2172" height="724" alt="" loading="lazy">
+        <img class="hero-photo is-active" src="/img/hero-slide-1.webp" srcset="/img/hero-slide-1-800.webp 800w, /img/hero-slide-1.webp 1600w" sizes="100vw" width="1600" height="532" alt="" fetchpriority="high" decoding="async">
+        <img class="hero-photo" src="/img/hero-slide-2.webp" srcset="/img/hero-slide-2-800.webp 800w, /img/hero-slide-2.webp 1600w" sizes="100vw" width="1600" height="534" alt="" loading="lazy" decoding="async">
       </div>
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="hero-blob hero-blob-left" aria-hidden="true"></div>
@@ -524,7 +593,10 @@ function render_home(array $ctx): string
     <section class="benefits" aria-labelledby="benefits-heading">
       <div class="wrap benefits-layout">
         <figure class="benefits-media">
-          <img src="/img/benefits-portrait.jpg" width="404" height="539" alt="" loading="lazy" decoding="async">
+          <picture>
+            <source type="image/webp" srcset="/img/benefits-portrait.webp">
+            <img src="/img/benefits-portrait.jpg" width="404" height="539" alt="" loading="lazy" decoding="async">
+          </picture>
         </figure>
         <div class="benefits-content">
           <div class="benefits-head">
@@ -541,6 +613,21 @@ function render_home(array $ctx): string
         'description' => 'Księgowość firm. Rzetelna obsługa księgowa, kadry i płace, rozliczenia PIT. Usługi księgowe, rozliczenia podatkowe. Zapraszamy Biuro Rachunkowe AS Nowy Sącz.',
         'active' => '/',
         'main' => $main,
+        'preload' => [
+            [
+                'href' => '/img/hero-slide-1.webp',
+                'as' => 'image',
+                'type' => 'image/webp',
+                'imagesrcset' => '/img/hero-slide-1-800.webp 800w, /img/hero-slide-1.webp 1600w',
+                'imagesizes' => '100vw',
+                'fetchpriority' => 'high',
+            ],
+            [
+                'href' => '/fonts/manrope-700.woff2',
+                'as' => 'font',
+                'type' => 'font/woff2',
+            ],
+        ],
     ]));
 }
 
@@ -561,28 +648,40 @@ function render_about(array $ctx): string
           <a class="button button-line" href="/kontakt">Kontakt</a>
         </p>
       </div>
-      ' . page_media('/img/office-1209640_1920.jpg', ['width' => 1920, 'height' => 1281]) . '
+      ' . page_media('/img/office-1209640_1920.jpg', [
+            'width' => 1440,
+            'height' => 961,
+            'webp' => '/img/office-1209640_1440.webp',
+            'webpSrcset' => '/img/office-1209640_960.webp 960w, /img/office-1209640_1440.webp 1440w',
+            'sizes' => '(max-width: 900px) 92vw, min(560px, 42vw)',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
 }
-function offer_section_media(string $key): string
+function offer_section_media(string $key, bool $deferSrc = false): string
 {
+    $common = [
+        'width' => 1280,
+        'height' => 720,
+        'sizes' => '(max-width: 900px) 92vw, min(640px, 48vw)',
+        'deferSrc' => $deferSrc,
+    ];
     $map = [
-        'ksiegowosc' => page_media('/img/banner-doswiadczenie.jpg', [
-            'width' => 1280,
-            'height' => 720,
+        'ksiegowosc' => page_media('/img/banner-doswiadczenie.jpg', $common + [
             'className' => 'offer-block-media offer-block-media--desk',
+            'webp' => '/img/banner-doswiadczenie.webp',
+            'webpSrcset' => '/img/banner-doswiadczenie-640.webp 640w, /img/banner-doswiadczenie.webp 1280w',
         ]),
-        'kadry' => page_media('/img/kadry-banner.jpg', [
-            'width' => 1600,
-            'height' => 900,
+        'kadry' => page_media('/img/kadry-banner.jpg', $common + [
             'className' => 'offer-block-media offer-block-media--people',
+            'webp' => '/img/kadry-banner.webp',
+            'webpSrcset' => '/img/kadry-banner-640.webp 640w, /img/kadry-banner.webp 1280w',
         ]),
-        'pit' => page_media('/img/banner-doradca.jpg', [
-            'width' => 1280,
-            'height' => 720,
+        'pit' => page_media('/img/banner-doradca.jpg', $common + [
             'className' => 'offer-block-media offer-block-media--docs',
+            'webp' => '/img/banner-doradca.webp',
+            'webpSrcset' => '/img/banner-doradca-640.webp 640w, /img/banner-doradca.webp 1280w',
         ]),
     ];
     return $map[$key] ?? '';
@@ -610,8 +709,8 @@ function render_offer(array $ctx, ?array $offer = null): string
           <span class="offer-tile-label">' . e($meta['label']) . '</span>
         </button>';
         $body = sanitize_offer_html((string) $offer['sections'][$key]['html']);
-        $panels .= '<section class="offer-block offer-panel' . $active . '" id="' . e($key) . '" role="tabpanel" aria-labelledby="tab-' . e($key) . '" data-offer-panel="' . e($key) . '">
-        ' . offer_section_media($key) . '
+        $panels .= '<section class="offer-block offer-panel' . $active . '" id="' . e($key) . '" role="tabpanel" aria-labelledby="tab-' . e($key) . '" data-offer-panel="' . e($key) . '"' . ($first ? '' : ' hidden') . '>
+        ' . offer_section_media($key, !$first) . '
         <h2>' . e((string) $offer['sections'][$key]['title']) . '</h2>
         <div class="offer-richtext">' . $body . '</div>
       </section>';
@@ -816,7 +915,12 @@ function render_prices(array $ctx, array $items): string
         </div>
         ' . $editor . '
       </div>
-      ' . page_media('/img/hero-office.jpg', ['width' => 1280, 'height' => 720]) . '
+      ' . page_media('/img/hero-office.jpg', [
+            'width' => 1280,
+            'height' => 720,
+            'webp' => '/img/hero-office.webp',
+            'webpSrcset' => '/img/hero-office-640.webp 640w, /img/hero-office.webp 1280w',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
@@ -845,7 +949,13 @@ function render_remote(array $ctx): string
           <p class="hero-actions"><a class="button" href="/kontakt">Kontakt <span aria-hidden="true">→</span></a></p>
         </div>
       </div>
-      ' . page_media('/img/zdalna-ksiegowosc.jpg', ['width' => 900, 'height' => 1200, 'className' => 'page-side-media page-side-media--remote']) . '
+      ' . page_media('/img/zdalna-ksiegowosc.jpg', [
+            'width' => 720,
+            'height' => 960,
+            'className' => 'page-side-media page-side-media--remote',
+            'webp' => '/img/zdalna-ksiegowosc.webp',
+            'sizes' => '(max-width: 900px) 92vw, min(420px, 36vw)',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
@@ -862,7 +972,14 @@ function render_contact(array $ctx): string
         'Kontakt',
         $desc,
         '/kontakt',
-        page_media('/img/1-6.jpg', ['width' => 1900, 'height' => 1010, 'className' => 'page-banner page-banner--contact']) . '
+        page_media('/img/1-6.jpg', [
+            'width' => 1600,
+            'height' => 851,
+            'className' => 'page-banner page-banner--contact',
+            'webp' => '/img/1-6.webp',
+            'webpSrcset' => '/img/1-6-960.webp 960w, /img/1-6.webp 1600w',
+            'sizes' => '100vw',
+        ]) . '
     <div class="contact-grid">
       <div class="page-copy">
         <p><strong>Biuro Rachunkowe AS</strong><br><em>' . e($c['owner']) . '</em></p>
@@ -1070,7 +1187,12 @@ function render_advisor(array $ctx): string
         <p>' . e(ADVISOR_TEXT) . '</p>
         <p class="hero-actions"><a class="button" href="/oferta">Nasza oferta <span aria-hidden="true">→</span></a></p>
       </div>
-      ' . page_media('/img/banner-doradca.jpg', ['width' => 1280, 'height' => 720]) . '
+      ' . page_media('/img/banner-doradca.jpg', [
+            'width' => 1280,
+            'height' => 720,
+            'webp' => '/img/banner-doradca.webp',
+            'webpSrcset' => '/img/banner-doradca-640.webp 640w, /img/banner-doradca.webp 1280w',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
@@ -1087,7 +1209,12 @@ function render_support(array $ctx): string
         <p>' . e(ADVISOR_TEXT) . '</p>
         <p class="hero-actions"><a class="button" href="/oferta">Nasza oferta <span aria-hidden="true">→</span></a></p>
       </div>
-      ' . page_media('/img/banner-wsparcie.jpg', ['width' => 1280, 'height' => 720]) . '
+      ' . page_media('/img/banner-wsparcie.jpg', [
+            'width' => 1280,
+            'height' => 720,
+            'webp' => '/img/banner-wsparcie.webp',
+            'webpSrcset' => '/img/banner-wsparcie-640.webp 640w, /img/banner-wsparcie.webp 1280w',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
@@ -1104,7 +1231,12 @@ function render_professional(array $ctx): string
         <p>Stosujemy sprawdzone systemy obsługi księgowej, zawsze indywidualnie dostosowane do konkretnych potrzeb klienta. Nasze motto: „Ty rozwijasz swój biznes – my księgujemy!”</p>
         <p class="hero-actions"><a class="button" href="/oferta">Nasza oferta <span aria-hidden="true">→</span></a></p>
       </div>
-      ' . page_media('/img/shutterstock_77448604.jpg', ['width' => 1600, 'height' => 799]) . '
+      ' . page_media('/img/shutterstock_77448604.jpg', [
+            'width' => 1200,
+            'height' => 599,
+            'webp' => '/img/shutterstock_77448604.webp',
+            'webpSrcset' => '/img/shutterstock_77448604-800.webp 800w, /img/shutterstock_77448604.webp 1200w',
+        ]) . '
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));

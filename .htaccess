@@ -33,6 +33,21 @@ DirectoryIndex index.php
   Header set Cross-Origin-Opener-Policy "same-origin"
   Header set Cross-Origin-Resource-Policy "same-origin"
   Header set X-Permitted-Cross-Domain-Policies "none"
+
+  # Długi cache dla plików statycznych (wersjonowane ?v= w HTML).
+  SetEnvIf Request_URI "\.(?i:css|js|mjs|woff2|webp|jpe?g|png|gif|svg|ico)$" STATIC_ASSET
+  Header set Cache-Control "public, max-age=31536000, immutable" env=STATIC_ASSET
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType text/javascript "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
 </IfModule>
 
 # Nie serwuj plików PHP z katalogu public (gdyby ktoś wrzucił).
