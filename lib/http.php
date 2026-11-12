@@ -23,7 +23,7 @@ function security_headers(array $config): void
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header(
-        "Content-Security-Policy: default-src 'self'; img-src 'self'; style-src 'self'; script-src 'self'; frame-src https://www.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+        "Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src 'self' https://www.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
     );
     header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
     header('Cross-Origin-Opener-Policy: same-origin');
@@ -59,7 +59,7 @@ function page_error(string $title, string $message): string
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>' . e($title) . '</title>
-  <link rel="stylesheet" href="/css/style.css?v=62">
+  <link rel="stylesheet" href="/css/style.css?v=63">
 </head>
 <body>
   <main class="wrap narrow">
@@ -85,13 +85,22 @@ function clean_text(mixed $value, int $max): ?string
 
 function read_post(): array
 {
-    return [
+    $data = [
         'csrf' => (string) ($_POST['csrf'] ?? ''),
         'username' => (string) ($_POST['username'] ?? ''),
         'password' => (string) ($_POST['password'] ?? ''),
         'name' => (string) ($_POST['name'] ?? ''),
         'price' => (string) ($_POST['price'] ?? ''),
+        'lead' => (string) ($_POST['lead'] ?? ''),
+        'sections' => [],
     ];
+    foreach (['ksiegowosc', 'kadry', 'pit'] as $key) {
+        $data['sections'][$key] = [
+            'title' => (string) ($_POST['title_' . $key] ?? ''),
+            'html' => (string) ($_POST['html_' . $key] ?? ''),
+        ];
+    }
+    return $data;
 }
 
 function request_path(): ?string

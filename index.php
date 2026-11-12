@@ -5,6 +5,7 @@ require_once __DIR__ . '/lib/bootstrap.php';
 
 $APP_CONFIG = load_config();
 $db = open_price_store(resolve_data_path($APP_CONFIG));
+$offerStore = open_offer_store(resolve_offer_data_path($APP_CONFIG));
 
 $method = request_method();
 $path = request_path();
@@ -28,7 +29,6 @@ if ($path === '/kontakt-2') {
 $pages = [
     '/' => 'render_home',
     '/o-firmie' => 'render_about',
-    '/oferta' => 'render_offer',
     '/zdalnaksiegowosc' => 'render_remote',
     '/kontakt' => 'render_contact',
     '/indywidualny-doradca' => 'render_advisor',
@@ -45,7 +45,7 @@ function require_mutations(array $config, array $form): bool
         return false;
     }
     if (session_user() !== 'admin') {
-        send_html(403, page_error('Wymagane logowanie', 'Zaloguj się, aby zmieniać cennik.'), $config);
+        send_html(403, page_error('Wymagane logowanie', 'Zaloguj się, aby edytować treści.'), $config);
         return false;
     }
     return true;
@@ -71,7 +71,7 @@ if ($method === 'POST') {
         }
         clear_failures($ip);
         regenerate_session_auth($APP_CONFIG);
-        redirect_to('/cennik', $APP_CONFIG);
+        redirect_to('/admin/oferta', $APP_CONFIG);
     }
 
     if ($path === '/wyloguj') {
@@ -122,6 +122,18 @@ if ($method === 'POST') {
         redirect_to('/cennik', $APP_CONFIG);
     }
 
+    if ($path === '/admin/oferta') {
+        if (!require_mutations($APP_CONFIG, $form)) {
+            exit;
+        }
+        $offerStore->save([
+            'lead' => $form['lead'],
+            'sections' => $form['sections'],
+        ]);
+        set_flash('Zapisano treści oferty.');
+        redirect_to('/admin/oferta', $APP_CONFIG);
+    }
+
     send_html(404, page_error('Nie znaleziono', 'Nie ma takiej strony.'), $APP_CONFIG);
     exit;
 }
@@ -130,7 +142,7 @@ $flash = take_flash();
 
 if ($path === '/logowanie') {
     if (session_user() === 'admin') {
-        redirect_to('/cennik', $APP_CONFIG);
+        redirect_to('/admin/oferta', $APP_CONFIG);
     }
     send_html(200, render_login(view_context(''), $flash), $APP_CONFIG);
     exit;
@@ -138,6 +150,20 @@ if ($path === '/logowanie') {
 
 if ($path === '/cennik') {
     send_html(200, render_prices(view_context($flash), $db->list()), $APP_CONFIG);
+    exit;
+}
+
+if ($path === '/admin/oferta') {
+    if (session_user() !== 'admin') {
+        set_flash('Zaloguj się, aby edytować ofertę.');
+        redirect_to('/logowanie', $APP_CONFIG);
+    }
+    send_html(200, render_offer_editor(view_context($flash), $offerStore->get()), $APP_CONFIG);
+    exit;
+}
+
+if ($path === '/oferta') {
+    send_html(200, render_offer(view_context($flash), $offerStore->get()), $APP_CONFIG);
     exit;
 }
 

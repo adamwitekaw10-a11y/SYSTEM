@@ -5,6 +5,8 @@ require_once __DIR__ . '/escape.php';
 require_once __DIR__ . '/http.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/sanitize.php';
+require_once __DIR__ . '/offer.php';
 require_once __DIR__ . '/render.php';
 
 function app_root(): string

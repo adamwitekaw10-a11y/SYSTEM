@@ -151,7 +151,7 @@ function render_site_footer(?string $sessionUser): string
         $shortcutLinks .= '<li><a href="' . e($item['href']) . '">' . e($item['label']) . '</a></li>';
     }
     $editLink = $sessionUser
-        ? '<p class="footer-edit"><a href="/cennik">Edycja cennika</a></p>'
+        ? '<p class="footer-edit"><a href="/cennik">Edycja cennika</a> · <a href="/admin/oferta">Edycja oferty</a></p>'
         : '';
     $year = date('Y');
 
@@ -207,8 +207,10 @@ function layout(array $opts): string
 
     $adminBar = $sessionUser
         ? '<div class="admin-bar">
-        <p>Zalogowano. Edycja cennika jest włączona.</p>
+        <p>Zalogowano. Panel edycji jest włączony.</p>
         <a href="/cennik">Cennik</a>
+        <a href="/admin/oferta">Oferta</a>
+        <a href="/oferta">Podgląd oferty</a>
         <form method="post" action="/wyloguj">
           <input type="hidden" name="csrf" value="' . e($csrf) . '">
           <button type="submit">Wyloguj</button>
@@ -240,7 +242,7 @@ function layout(array $opts): string
   <meta name="twitter:description" content="' . e($description) . '">
   <link rel="icon" href="/img/ico.jpg" type="image/jpeg">
   <link rel="apple-touch-icon" href="/img/ico.jpg">
-  <link rel="stylesheet" href="/css/style.css?v=62">
+  <link rel="stylesheet" href="/css/style.css?v=63">
   <script type="application/ld+json">' . $jsonLd . '</script>
 </head>
 <body>
@@ -541,111 +543,124 @@ function render_about(array $ctx): string
     );
     return layout(array_merge($ctx, shell_from($page)));
 }
-function render_offer(array $ctx): string
+function offer_section_media(string $key): string
+{
+    $map = [
+        'ksiegowosc' => page_media('/img/banner-doswiadczenie.jpg', [
+            'width' => 1280,
+            'height' => 720,
+            'className' => 'offer-block-media offer-block-media--desk',
+        ]),
+        'kadry' => page_media('/img/kadry-banner.jpg', [
+            'width' => 1600,
+            'height' => 900,
+            'className' => 'offer-block-media offer-block-media--people',
+        ]),
+        'pit' => page_media('/img/banner-doradca.jpg', [
+            'width' => 1280,
+            'height' => 720,
+            'className' => 'offer-block-media offer-block-media--docs',
+        ]),
+    ];
+    return $map[$key] ?? '';
+}
+
+function render_offer(array $ctx, ?array $offer = null): string
 {
     $icons = service_icons();
+    $offer = $offer ?? offer_defaults();
+    $labels = [
+        'ksiegowosc' => ['icon' => 'books', 'label' => $offer['sections']['ksiegowosc']['title']],
+        'kadry' => ['icon' => 'people', 'label' => $offer['sections']['kadry']['title']],
+        'pit' => ['icon' => 'doc', 'label' => $offer['sections']['pit']['title']],
+    ];
+
+    $tiles = '';
+    $panels = '';
+    $first = true;
+    foreach ($labels as $key => $meta) {
+        $active = $first ? ' is-active' : '';
+        $selected = $first ? 'true' : 'false';
+        $tabindex = $first ? '' : ' tabindex="-1"';
+        $tiles .= '<button class="offer-tile' . $active . '" type="button" role="tab" id="tab-' . e($key) . '" aria-controls="' . e($key) . '" aria-selected="' . $selected . '"' . $tabindex . ' data-offer-tab="' . e($key) . '">
+          <span class="offer-tile-icon">' . $icons[$meta['icon']] . '</span>
+          <span class="offer-tile-label">' . e($meta['label']) . '</span>
+        </button>';
+        $body = sanitize_offer_html((string) $offer['sections'][$key]['html']);
+        $panels .= '<section class="offer-block offer-panel' . $active . '" id="' . e($key) . '" role="tabpanel" aria-labelledby="tab-' . e($key) . '" data-offer-panel="' . e($key) . '">
+        ' . offer_section_media($key) . '
+        <h2>' . e((string) $offer['sections'][$key]['title']) . '</h2>
+        <div class="offer-richtext">' . $body . '</div>
+      </section>';
+        $first = false;
+    }
+
     $page = subpage(
         'Oferta',
         'Księgowość, kadry i płace oraz rozliczenia PIT. Biuro Rachunkowe AS w Nowym Sączu.',
         '/oferta',
-        '<p class="lead">Nasze usługi:</p>
+        '<p class="lead">' . e((string) $offer['lead']) . '</p>
       <div class="offer-tabs" data-offer-tabs>
-      <div class="offer-tiles" role="tablist" aria-label="Usługi">
-        <button class="offer-tile is-active" type="button" role="tab" id="tab-ksiegowosc" aria-controls="ksiegowosc" aria-selected="true" data-offer-tab="ksiegowosc">
-          <span class="offer-tile-icon">' . $icons['books'] . '</span>
-          <span class="offer-tile-label">Księgowość</span>
-        </button>
-        <button class="offer-tile" type="button" role="tab" id="tab-kadry" aria-controls="kadry" aria-selected="false" tabindex="-1" data-offer-tab="kadry">
-          <span class="offer-tile-icon">' . $icons['people'] . '</span>
-          <span class="offer-tile-label">Kadry i płace</span>
-        </button>
-        <button class="offer-tile" type="button" role="tab" id="tab-pit" aria-controls="pit" aria-selected="false" tabindex="-1" data-offer-tab="pit">
-          <span class="offer-tile-icon">' . $icons['doc'] . '</span>
-          <span class="offer-tile-label">Rozliczenia PIT</span>
-        </button>
-      </div>
-      <section class="offer-block offer-panel is-active" id="ksiegowosc" role="tabpanel" aria-labelledby="tab-ksiegowosc" data-offer-panel="ksiegowosc">
-        ' . page_media('/img/banner-doswiadczenie.jpg', ['width' => 1280, 'height' => 720, 'className' => 'offer-block-media offer-block-media--desk']) . '
-        <h2>Księgowość</h2>
-        <p>Nasza oferta skierowana jest głównie do małych i średnich przedsiębiorstw. Uwalniamy Państwa od ciężaru prowadzenia księgowości, gwarantując dyskrecję, terminowość, sumienność i rzetelność zgodnie z obowiązującymi przepisami. Przejmując na siebie ciężar kontaktów z urzędami oszczędzamy Państwa czas i pieniądze.</p>
-        <p>Biuro Rachunkowe AS oferuje kompleksową obsługę księgową dla małych i średnich podmiotów gospodarczych o różnym profilu działalności i formie prawnej.</p>
-        <p>Świadczymy profesjonalne usługi księgowe w zakresie:</p>
-        <ul>
-          <li>prowadzenia pełnej księgowości (Księgi Handlowe),</li>
-          <li>prowadzenia księgowości uproszczonej (Podatkowe Księgi Przychodów i Rozchodów, Ryczałt),</li>
-          <li>Ewidencji środków trwałych i wyposażenia.</li>
-          <li>Ewidencji zakupów i sprzedaży dla potrzeb podatku VAT,</li>
-          <li>Przygotowania deklaracji podatkowych PIT, VAT, CIT, PFRON i innych,</li>
-          <li>Przygotowania deklaracji dla ZUS i ich przesyłu elektronicznego,</li>
-          <li>Sporządzania rocznych sprawozdań finansowych,</li>
-          <li>Przygotowania rocznych rozliczeń podatkowych,</li>
-          <li>Realizowanie indywidualnych potrzeb Klienta z zakresu księgowości,</li>
-        </ul>
-        <p>W ramach kompleksowej obsługi Biuro Rachunkowe AS zapewnia Klientom:</p>
-        <ul>
-          <li>reprezentowanie ich przed urzędami skarbowymi, ZUS, KRS, GUS, PFRON</li>
-          <li>bezpłatną pomoc w założeniu działalności gospodarczej osobom fizycznym (wypełnianiu deklaracji zgłoszeniowych, wniosków rejestracyjnych)</li>
-          <li>możliwość łączności z nami za pośrednictwem serwera</li>
-          <li>dużą dyspozycyjność i indywidualne podejście do każdego klienta.</li>
-        </ul>
-        <p>Biuro przejmuje odpowiedzialność za terminowe przygotowanie wszelkich niezbędnych dokumentów do rozliczeń z ZUS-em, Urzędem Skarbowym, GUS-em, PFRON-em.</p>
-      </section>
-      <section class="offer-block offer-panel" id="kadry" role="tabpanel" aria-labelledby="tab-kadry" data-offer-panel="kadry">
-        ' . page_media('/img/kadry-banner.jpg', ['width' => 1600, 'height' => 900, 'className' => 'offer-block-media offer-block-media--people']) . '
-        <h2>Kadry i płace</h2>
-        <p>Dla tych z Państwa , którzy całość spraw związanych prowadzeniem kadr i płac chcą przekazać do obsługi przez biuro rachunkowe możemy zaoferować:</p>
-        <ul>
-          <li>kompleksową obsługę kadrowo-płacową,</li>
-          <li>prowadzenie kart wynagrodzeń</li>
-          <li>przygotowywanie dokumentów związanych z zatrudnieniem i rozwiązaniem stosunku pracy,</li>
-          <li>prowadzenie akt osobowych pracowników,</li>
-          <li>prowadzenie ewidencji badań wstępnych, okresowych, kontrolnych,</li>
-          <li>ewidencjonowanie czasu pracy i nieobecności,</li>
-          <li>obsługa zatrudnienia na podstawie umów cywilnoprawnych (przygotowywanie umów, rachunków),</li>
-          <li>sporzadzenie list płac,</li>
-          <li>sporządzanie i przekazywanie deklaracji rozliczeniowych do ZUS i US, PFRON</li>
-          <li>sporzadzenie deklaracji i zaświadczeń dla pracowników,</li>
-          <li>obliczanie należnych składek ubezpieczeniowych, zaliczek na podatek od wynagrodzeń i umów cywilnoprawnych,</li>
-        </ul>
-        <p>Usługi kadrowo-płacowe prowadzimy przy wsparciu licencjonowanych systemów informatycznych.</p>
-      </section>
-      <section class="offer-block offer-panel" id="pit" role="tabpanel" aria-labelledby="tab-pit" data-offer-panel="pit">
-        ' . page_media('/img/banner-doradca.jpg', ['width' => 1280, 'height' => 720, 'className' => 'offer-block-media offer-block-media--docs']) . '
-        <h2>Rozliczenia PIT</h2>
-        <p><strong>Rozliczanie dochodów za 2023 rok – zeznania roczne PIT-36, PIT-36L PIT-37 oraz PIT-28</strong></p>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col"></th>
-                <th scope="col">Rozliczenie jednej osoby</th>
-                <th scope="col">Rozliczenie wspólne małżonków<br>Rozliczenie wspólne z dzieckiem</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th scope="row">Jeden dokument potwierdzający źródło dochodów – PIT-11</th>
-                <td>60,00 zł</td>
-                <td>80,00 zł</td>
-              </tr>
-              <tr>
-                <th scope="row">PIT-36 / PIT-28 działalność gospodarcza, praca za granicą</th>
-                <td>120,00 zł</td>
-                <td>120,00 zł</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="note">Podane ceny są cenami brutto.</p>
-        <p>Oferta dla naszych klientów:</p>
-        <ul>
-          <li>jeżeli zeznanie roczne opiera się tylko na wynikach z działalności gospodarczej, którą rozliczamy i nie występują żadne doliczenia, odliczenia i ulgi, to wówczas sporządzamy je w ramach obsługi księgowej firmy, bez żadnych dodatkowych opłat</li>
-          <li>w pozostałych przypadkach obowiązują powyższe ceny pomniejszone o 10,00 zł</li>
-        </ul>
-      </section>
+      <div class="offer-tiles" role="tablist" aria-label="Usługi">' . $tiles . '</div>
+      ' . $panels . '
       </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
+}
+
+function render_offer_editor(array $ctx, array $offer): string
+{
+    $sectionsHtml = '';
+    $first = true;
+    foreach (OFFER_SECTION_KEYS as $key) {
+        $section = $offer['sections'][$key];
+        $active = $first ? ' is-active' : '';
+        $hidden = $first ? '' : ' hidden';
+        $sectionsHtml .= '<div class="offer-admin-panel' . $active . '" data-offer-admin-panel="' . e($key) . '"' . $hidden . '>
+      <label class="offer-admin-title">Tytuł sekcji
+        <input name="title_' . e($key) . '" required maxlength="120" value="' . e($section['title']) . '">
+      </label>
+      <label class="offer-admin-body">Treść
+        <textarea id="editor-' . e($key) . '" name="html_' . e($key) . '" rows="18" class="offer-admin-textarea">' . e($section['html']) . '</textarea>
+      </label>
+    </div>';
+        $first = false;
+    }
+
+    $tabs = '';
+    $first = true;
+    foreach (OFFER_SECTION_KEYS as $key) {
+        $label = $offer['sections'][$key]['title'];
+        $active = $first ? ' is-active' : '';
+        $tabs .= '<button type="button" class="offer-admin-tab' . $active . '" data-offer-admin-tab="' . e($key) . '">' . e($label) . '</button>';
+        $first = false;
+    }
+
+    $main = '<article class="wrap offer-admin">
+    <h1>Edycja oferty</h1>
+    <p>Zmieniaj treści zakładek oferty edytorem wizualnym (jak w WordPressie). Zmiany są od razu widoczne na stronie <a href="/oferta">/oferta</a>.</p>
+    <form class="offer-admin-form" method="post" action="/admin/oferta" data-offer-admin-form>
+      <input type="hidden" name="csrf" value="' . e((string) $ctx['csrf']) . '">
+      <label class="offer-admin-lead">Nagłówek nad zakładkami
+        <input name="lead" required maxlength="200" value="' . e((string) $offer['lead']) . '">
+      </label>
+      <div class="offer-admin-tabs" role="tablist" aria-label="Sekcje oferty">' . $tabs . '</div>
+      ' . $sectionsHtml . '
+      <p class="offer-admin-actions">
+        <button type="submit" class="button">Zapisz ofertę</button>
+        <a class="button button-line" href="/oferta">Anuluj / podgląd</a>
+      </p>
+    </form>
+  </article>
+  <script src="/vendor/tinymce/tinymce.min.js" referrerpolicy="origin"></script>
+  <script src="/js/offer-admin.js?v=1" defer></script>';
+
+    return layout(array_merge($ctx, [
+        'title' => 'Edycja oferty - Biuro rachunkowe AS Nowy Sącz - Księgowość',
+        'description' => 'Panel edycji treści oferty Biura Rachunkowego AS.',
+        'active' => '/oferta',
+        'main' => $main,
+    ]));
 }
 
 function price_editor(array $items, string $csrf): string
@@ -925,8 +940,8 @@ function render_login(array $ctx, string $error = ''): string
         ? '<p class="form-error" role="alert">' . e($error) . '</p>'
         : '';
     $main = '<article class="wrap narrow">
-    <h1>Edycja cennika</h1>
-    <p>Zaloguj się, aby dodawać, zmieniać i usuwać pozycje cennika.</p>
+    <h1>Panel administracyjny</h1>
+    <p>Zaloguj się, aby edytować cennik oraz treści oferty.</p>
     ' . $message . '
     <form class="login-form" method="post" action="/logowanie">
       <input type="hidden" name="csrf" value="' . e((string) $ctx['csrf']) . '">
