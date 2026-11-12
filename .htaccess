@@ -8,8 +8,10 @@ DirectoryIndex index.php
   # Jeśli DocumentRoot wskazuje na katalog aplikacji:
   # RewriteBase /
 
-  # Blokada bezpośredniego HTTP do katalogów wrażliwych
+  # Blokada bezpośredniego HTTP do katalogów i plików wrażliwych
   RewriteRule ^(lib|data)(/|$) - [F,L]
+  RewriteRule ^config(\.example)?\.php$ - [F,L]
+  RewriteRule (^|/)\. - [F,L]
 
   # Statyczne pliki z public/ (css, js, img, fonts, robots, sitemap)
   RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
@@ -27,4 +29,13 @@ DirectoryIndex index.php
   Header set X-Content-Type-Options "nosniff"
   Header set X-Frame-Options "DENY"
   Header set Referrer-Policy "strict-origin-when-cross-origin"
+  Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  Header set Cross-Origin-Opener-Policy "same-origin"
+  Header set Cross-Origin-Resource-Policy "same-origin"
+  Header set X-Permitted-Cross-Domain-Policies "none"
+</IfModule>
+
+# Nie serwuj plików PHP z katalogu public (gdyby ktoś wrzucił).
+<IfModule mod_rewrite.c>
+  RewriteRule ^public/.*\.(php|phtml|phar)$ - [F,L]
 </IfModule>

@@ -5,6 +5,7 @@ data/cennik.json
 data/oferta.json
 data/kontakt.json
 data/rate-limit.json
+data/admin-auth.json
 data/sessions/
 config.php
 .env

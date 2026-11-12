@@ -247,8 +247,9 @@ function layout(array $opts): string
 
     $adminBar = $sessionUser
         ? '<div class="admin-bar">
-        <p>Zalogowano</p>
+        <p>Zalogowano: <strong>' . e((string) $sessionUser) . '</strong></p>
         <a href="/admin">Panel edycji</a>
+        <a href="/admin/konto">Konto</a>
         <form method="post" action="/wyloguj">
           <input type="hidden" name="csrf" value="' . e($csrf) . '">
           <button type="submit">Wyloguj</button>
@@ -663,6 +664,11 @@ function admin_edit_choices(array $offer): array
             'label' => 'Dane kontaktowe',
             'hint' => 'Telefony, e-mail, adres i godziny (topbar, stopka, kontakt).',
         ],
+        [
+            'href' => '/admin/konto',
+            'label' => 'Konto administratora',
+            'hint' => 'Zmiana loginu i hasła (wymaga obecnego hasła).',
+        ],
     ];
 }
 
@@ -928,6 +934,43 @@ function render_contact_editor(array $ctx, array $contact): string
     return layout(array_merge($ctx, [
         'title' => 'Dane kontaktowe - Biuro rachunkowe AS Nowy Sącz - Księgowość',
         'description' => 'Edycja danych kontaktowych Biura Rachunkowego AS.',
+        'active' => '',
+        'main' => $main,
+    ]));
+}
+
+function render_account_editor(array $ctx, string $username): string
+{
+    $csrf = e((string) $ctx['csrf']);
+    $min = PASSWORD_MIN_LENGTH;
+    $main = '<article class="wrap offer-admin">
+    <p class="offer-admin-back"><a href="/admin">← Wróć do wyboru</a></p>
+    <h1>Konto administratora</h1>
+    <p>Zmiana loginu i hasła. Wymagane jest obecne hasło; nowe hasło potwierdź drugi raz (min. ' . (int) $min . ' znaków).</p>
+    <form class="offer-admin-form" method="post" action="/admin/konto" autocomplete="off">
+      <input type="hidden" name="csrf" value="' . $csrf . '">
+      <label class="offer-admin-lead">Obecne hasło
+        <input type="password" name="current_password" required autocomplete="current-password">
+      </label>
+      <label class="offer-admin-lead">Nowy login
+        <input type="text" name="new_username" required maxlength="80" pattern="[a-zA-Z0-9._@\-]+" value="' . e($username) . '" autocomplete="username">
+      </label>
+      <label class="offer-admin-lead">Nowe hasło
+        <input type="password" name="new_password" required minlength="' . (int) $min . '" autocomplete="new-password">
+      </label>
+      <label class="offer-admin-lead">Potwierdź nowe hasło
+        <input type="password" name="new_password_confirm" required minlength="' . (int) $min . '" autocomplete="new-password">
+      </label>
+      <p class="offer-admin-actions">
+        <button type="submit" class="button">Zapisz login i hasło</button>
+        <a class="button button-line" href="/admin">Anuluj</a>
+      </p>
+    </form>
+  </article>';
+
+    return layout(array_merge($ctx, [
+        'title' => 'Konto administratora - Biuro rachunkowe AS Nowy Sącz - Księgowość',
+        'description' => 'Zmiana loginu i hasła administratora Biura Rachunkowego AS.',
         'active' => '',
         'main' => $main,
     ]));

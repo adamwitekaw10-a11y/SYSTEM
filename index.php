@@ -40,17 +40,30 @@ $pages = [
     '/polityka-cookies' => 'render_cookies',
 ];
 
+function require_admin(): bool
+{
+    return is_admin_logged_in();
+}
+
 function require_mutations(array $config, array $form): bool
 {
     if (!origin_ok($config) || !csrf_ok($form['csrf'])) {
         send_html(403, page_error('Odmowa', 'Żądanie zostało odrzucone.'), $config);
         return false;
     }
-    if (session_user() !== 'admin') {
+    if (!require_admin()) {
         send_html(403, page_error('Wymagane logowanie', 'Zaloguj się, aby edytować treści.'), $config);
         return false;
     }
     return true;
+}
+
+function require_admin_page(array $config): void
+{
+    if (!require_admin()) {
+        set_flash('Zaloguj się, aby edytować treści.');
+        redirect_to('/logowanie', $config);
+    }
 }
 
 if ($method === 'POST') {
@@ -68,11 +81,13 @@ if ($method === 'POST') {
         }
         if (!credentials_match($APP_CONFIG, $form['username'], $form['password'])) {
             record_failure($ip);
+            usleep(250000);
             set_flash('Nieprawidłowa nazwa użytkownika lub hasło.');
             redirect_to('/logowanie', $APP_CONFIG);
         }
         clear_failures($ip);
-        regenerate_session_auth($APP_CONFIG);
+        $storedUser = resolve_admin_credentials($APP_CONFIG)['username'];
+        regenerate_session_auth($storedUser);
         redirect_to('/admin', $APP_CONFIG);
     }
 
@@ -96,6 +111,7 @@ if ($method === 'POST') {
             redirect_to('/cennik', $APP_CONFIG);
         }
         $db->create($name, $price);
+        rotate_csrf_token();
         set_flash('Dodano pozycję cennika.');
         redirect_to('/cennik', $APP_CONFIG);
     }
@@ -111,6 +127,7 @@ if ($method === 'POST') {
             redirect_to('/cennik', $APP_CONFIG);
         }
         $ok = $db->update((int) $m[1], $name, $price);
+        rotate_csrf_token();
         set_flash($ok ? 'Zapisano pozycję cennika.' : 'Nie znaleziono pozycji.');
         redirect_to('/cennik', $APP_CONFIG);
     }
@@ -120,6 +137,7 @@ if ($method === 'POST') {
             exit;
         }
         $ok = $db->remove((int) $m[1]);
+        rotate_csrf_token();
         set_flash($ok ? 'Usunięto pozycję cennika.' : 'Nie znaleziono pozycji.');
         redirect_to('/cennik', $APP_CONFIG);
     }
@@ -136,6 +154,7 @@ if ($method === 'POST') {
             $current['sections'][$part] = $form['sections'][$part];
         }
         $offerStore->save($current);
+        rotate_csrf_token();
         set_flash('Zapisano. Możesz wybrać kolejną treść do edycji.');
         redirect_to('/admin', $APP_CONFIG);
     }
@@ -146,7 +165,28 @@ if ($method === 'POST') {
         }
         $contactStore->save($form['contact'] ?? []);
         set_site_contact($contactStore->get());
+        rotate_csrf_token();
         set_flash('Zapisano dane kontaktowe.');
+        redirect_to('/admin', $APP_CONFIG);
+    }
+
+    if ($path === '/admin/konto') {
+        if (!require_mutations($APP_CONFIG, $form)) {
+            exit;
+        }
+        $result = update_admin_credentials(
+            $APP_CONFIG,
+            $form['current_password'],
+            $form['new_username'],
+            $form['new_password'],
+            $form['new_password_confirm']
+        );
+        if (!$result['ok']) {
+            set_flash($result['error']);
+            redirect_to('/admin/konto', $APP_CONFIG);
+        }
+        regenerate_session_auth(trim($form['new_username']));
+        set_flash('Zapisano login i hasło. Zalogowano ponownie z nowymi danymi.');
         redirect_to('/admin', $APP_CONFIG);
     }
 
@@ -157,7 +197,7 @@ if ($method === 'POST') {
 $flash = take_flash();
 
 if ($path === '/logowanie') {
-    if (session_user() === 'admin') {
+    if (is_admin_logged_in()) {
         redirect_to('/admin', $APP_CONFIG);
     }
     send_html(200, render_login(view_context(''), $flash), $APP_CONFIG);
@@ -170,10 +210,7 @@ if ($path === '/cennik') {
 }
 
 if ($path === '/admin' || $path === '/admin/oferta') {
-    if (session_user() !== 'admin') {
-        set_flash('Zaloguj się, aby edytować treści.');
-        redirect_to('/logowanie', $APP_CONFIG);
-    }
+    require_admin_page($APP_CONFIG);
     if ($path === '/admin/oferta') {
         redirect_to('/admin', $APP_CONFIG);
     }
@@ -182,10 +219,7 @@ if ($path === '/admin' || $path === '/admin/oferta') {
 }
 
 if (preg_match('#^/admin/oferta/(lead|ksiegowosc|kadry|pit)$#', $path, $m)) {
-    if (session_user() !== 'admin') {
-        set_flash('Zaloguj się, aby edytować treści.');
-        redirect_to('/logowanie', $APP_CONFIG);
-    }
+    require_admin_page($APP_CONFIG);
     send_html(
         200,
         render_offer_part_editor(view_context($flash), $offerStore->get(), $m[1]),
@@ -195,11 +229,18 @@ if (preg_match('#^/admin/oferta/(lead|ksiegowosc|kadry|pit)$#', $path, $m)) {
 }
 
 if ($path === '/admin/kontakt') {
-    if (session_user() !== 'admin') {
-        set_flash('Zaloguj się, aby edytować treści.');
-        redirect_to('/logowanie', $APP_CONFIG);
-    }
+    require_admin_page($APP_CONFIG);
     send_html(200, render_contact_editor(view_context($flash), $contactStore->get()), $APP_CONFIG);
+    exit;
+}
+
+if ($path === '/admin/konto') {
+    require_admin_page($APP_CONFIG);
+    send_html(
+        200,
+        render_account_editor(view_context($flash), resolve_admin_credentials($APP_CONFIG)['username']),
+        $APP_CONFIG
+    );
     exit;
 }
 

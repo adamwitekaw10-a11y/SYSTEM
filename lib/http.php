@@ -22,11 +22,14 @@ function security_headers(array $config): void
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: strict-origin-when-cross-origin');
-    header(
-        "Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src 'self' https://www.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
-    );
+    $csp = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src 'self' https://www.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'";
+    if (is_https_request($config)) {
+        $csp .= '; upgrade-insecure-requests';
+    }
+    header('Content-Security-Policy: ' . $csp);
     header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
     header('Cross-Origin-Opener-Policy: same-origin');
+    header('Cross-Origin-Resource-Policy: same-origin');
     header('X-Permitted-Cross-Domain-Policies: none');
     if (is_https_request($config)) {
         header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
@@ -89,6 +92,10 @@ function read_post(): array
         'csrf' => (string) ($_POST['csrf'] ?? ''),
         'username' => (string) ($_POST['username'] ?? ''),
         'password' => (string) ($_POST['password'] ?? ''),
+        'current_password' => (string) ($_POST['current_password'] ?? ''),
+        'new_username' => (string) ($_POST['new_username'] ?? ''),
+        'new_password' => (string) ($_POST['new_password'] ?? ''),
+        'new_password_confirm' => (string) ($_POST['new_password_confirm'] ?? ''),
         'name' => (string) ($_POST['name'] ?? ''),
         'price' => (string) ($_POST['price'] ?? ''),
         'lead' => (string) ($_POST['lead'] ?? ''),
