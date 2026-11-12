@@ -6,6 +6,8 @@ require_once __DIR__ . '/lib/bootstrap.php';
 $APP_CONFIG = load_config();
 $db = open_price_store(resolve_data_path($APP_CONFIG));
 $offerStore = open_offer_store(resolve_offer_data_path($APP_CONFIG));
+$contactStore = open_contact_store(resolve_contact_data_path($APP_CONFIG));
+set_site_contact($contactStore->get());
 
 $method = request_method();
 $path = request_path();
@@ -138,6 +140,16 @@ if ($method === 'POST') {
         redirect_to('/admin', $APP_CONFIG);
     }
 
+    if ($path === '/admin/kontakt') {
+        if (!require_mutations($APP_CONFIG, $form)) {
+            exit;
+        }
+        $contactStore->save($form['contact'] ?? []);
+        set_site_contact($contactStore->get());
+        set_flash('Zapisano dane kontaktowe.');
+        redirect_to('/admin', $APP_CONFIG);
+    }
+
     send_html(404, page_error('Nie znaleziono', 'Nie ma takiej strony.'), $APP_CONFIG);
     exit;
 }
@@ -179,6 +191,15 @@ if (preg_match('#^/admin/oferta/(lead|ksiegowosc|kadry|pit)$#', $path, $m)) {
         render_offer_part_editor(view_context($flash), $offerStore->get(), $m[1]),
         $APP_CONFIG
     );
+    exit;
+}
+
+if ($path === '/admin/kontakt') {
+    if (session_user() !== 'admin') {
+        set_flash('Zaloguj się, aby edytować treści.');
+        redirect_to('/logowanie', $APP_CONFIG);
+    }
+    send_html(200, render_contact_editor(view_context($flash), $contactStore->get()), $APP_CONFIG);
     exit;
 }
 

@@ -3,6 +3,7 @@ data/*.sqlite
 data/*.sqlite-*
 data/cennik.json
 data/oferta.json
+data/kontakt.json
 data/rate-limit.json
 data/sessions/
 config.php

@@ -93,12 +93,29 @@ function read_post(): array
         'price' => (string) ($_POST['price'] ?? ''),
         'lead' => (string) ($_POST['lead'] ?? ''),
         'sections' => [],
+        'contact' => [],
     ];
     foreach (['ksiegowosc', 'kadry', 'pit'] as $key) {
         $data['sections'][$key] = [
             'title' => (string) ($_POST['title_' . $key] ?? ''),
             'html' => (string) ($_POST['html_' . $key] ?? ''),
         ];
+    }
+    foreach ([
+        'phone',
+        'phone_mobile',
+        'email',
+        'street',
+        'street_footer',
+        'postal_city',
+        'city_short',
+        'region',
+        'hours',
+        'hours_opens',
+        'hours_closes',
+        'owner',
+    ] as $key) {
+        $data['contact'][$key] = (string) ($_POST[$key] ?? '');
     }
     return $data;
 }

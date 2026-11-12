@@ -41,23 +41,38 @@ function nav_items(): array
     ];
 }
 
+function contact_postal_parts(array $c): array
+{
+    if (preg_match('/^(\d{2}-\d{3})\s+(.+)$/u', (string) $c['postal_city'], $m)) {
+        return ['postal' => $m[1], 'city' => $m[2]];
+    }
+    return ['postal' => '', 'city' => (string) $c['city_short']];
+}
+
 function local_business_json(): string
 {
     $site = site_url_cfg();
+    $c = site_contact();
+    $parts = contact_postal_parts($c);
+    $phoneTel = contact_tel_href($c['phone']);
+    $mobileTel = contact_tel_href($c['phone_mobile']);
     $data = [
         '@context' => 'https://schema.org',
         '@type' => 'AccountingService',
         'name' => SITE_NAME,
-        'alternateName' => 'Biuro Rachunkowe AS Aneta Stanik',
+        'alternateName' => 'Biuro Rachunkowe AS ' . $c['owner'],
         'url' => $site,
         'image' => $site . '/img/logo_small.jpg',
-        'telephone' => ['+48 18 541 22 17', '+48 530 770 208'],
-        'email' => 'biuro@biuro-as.pl',
+        'telephone' => [
+            preg_replace('/^tel:/', '', $phoneTel) ?: $c['phone'],
+            preg_replace('/^tel:/', '', $mobileTel) ?: $c['phone_mobile'],
+        ],
+        'email' => $c['email'],
         'address' => [
             '@type' => 'PostalAddress',
-            'streetAddress' => 'ul. Bora-Komorowskiego 22/1',
-            'addressLocality' => 'Nowy Sącz',
-            'postalCode' => '33-300',
+            'streetAddress' => $c['street'],
+            'addressLocality' => $parts['city'] !== '' ? $parts['city'] : $c['city_short'],
+            'postalCode' => $parts['postal'],
             'addressRegion' => 'Małopolskie',
             'addressCountry' => 'PL',
         ],
@@ -69,10 +84,10 @@ function local_business_json(): string
         'openingHoursSpecification' => [
             '@type' => 'OpeningHoursSpecification',
             'dayOfWeek' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-            'opens' => '09:00',
-            'closes' => '16:00',
+            'opens' => $c['hours_opens'],
+            'closes' => $c['hours_closes'],
         ],
-        'areaServed' => 'Nowy Sącz',
+        'areaServed' => $c['city_short'],
         'priceRange' => '$$',
     ];
     return str_replace('<', '\\u003c', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -154,14 +169,17 @@ function render_site_footer(?string $sessionUser): string
         ? '<p class="footer-edit"><a href="/admin">Panel edycji</a></p>'
         : '';
     $year = date('Y');
+    $c = site_contact();
+    $phoneHref = e(contact_tel_href($c['phone']));
+    $mobileHref = e(contact_tel_href($c['phone_mobile']));
 
     return '<footer class="site-footer">
     <div class="wrap footer-inner">
       <div class="footer-brand">
         <p class="footer-name">Biuro Rachunkowe AS</p>
-        <p>ul. Bora-Komorowskiego 22 lok. 1<br>
-        33-300 Nowy Sącz</p>
-        <p class="footer-hours">Poniedziałek – Piątek: 09:00 – 16:00</p>
+        <p>' . e($c['street_footer']) . '<br>
+        ' . e($c['postal_city']) . '</p>
+        <p class="footer-hours">' . e($c['hours']) . '</p>
       </div>
       <nav class="footer-col" aria-label="Menu">
         <p class="footer-heading">Menu</p>
@@ -173,9 +191,9 @@ function render_site_footer(?string $sessionUser): string
       </nav>
       <div class="footer-col footer-contact">
         <p class="footer-heading">Dane kontaktowe</p>
-        <p>tel. <a href="tel:+48185412217">18 541 22 17</a><br>
-        kom. <a href="tel:+48530770208">530 770 208</a><br>
-        e-mail <a href="mailto:biuro@biuro-as.pl">biuro@biuro-as.pl</a></p>
+        <p>tel. <a href="' . $phoneHref . '">' . e($c['phone']) . '</a><br>
+        kom. <a href="' . $mobileHref . '">' . e($c['phone_mobile']) . '</a><br>
+        e-mail <a href="mailto:' . e($c['email']) . '">' . e($c['email']) . '</a></p>
         ' . $editLink . '
       </div>
     </div>
@@ -191,6 +209,28 @@ function render_site_footer(?string $sessionUser): string
     </div>
   </footer>';
 }
+function render_topbar(): string
+{
+    $c = site_contact();
+    return '<div class="topbar">
+    <div class="wrap topbar-inner">
+      <p class="top-item">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.5h2.6l1.2 3-1.9 1.1a12.2 12.2 0 0 0 6.1 6.1l1.1-1.9 3 1.2v2.6a1.7 1.7 0 0 1-1.7 1.7A13.4 13.4 0 0 1 4.9 5.2a1.7 1.7 0 0 1 1.7-1.7z"/></svg>
+        <a href="' . e(contact_tel_href($c['phone'])) . '">' . e($c['phone']) . '</a>
+        <a href="' . e(contact_tel_href($c['phone_mobile'])) . '">' . e($c['phone_mobile']) . '</a>
+      </p>
+      <p class="top-item">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.8a6.2 6.2 0 0 0-6.2 6.2c0 4.6 6.2 11.2 6.2 11.2s6.2-6.6 6.2-11.2A6.2 6.2 0 0 0 12 2.8zm0 8.3a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z"/></svg>
+        ' . e($c['city_short'] . ', ' . $c['street']) . '
+      </p>
+      <p class="top-item">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8.1V12l2.5 1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        ' . e($c['hours']) . '
+      </p>
+    </div>
+  </div>';
+}
+
 function layout(array $opts): string
 {
     $title = (string) $opts['title'];
@@ -246,23 +286,7 @@ function layout(array $opts): string
 <body>
   <a class="skip" href="#tresc">Przejdź do treści</a>
   ' . $adminBar . '
-  <div class="topbar">
-    <div class="wrap topbar-inner">
-      <p class="top-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.5h2.6l1.2 3-1.9 1.1a12.2 12.2 0 0 0 6.1 6.1l1.1-1.9 3 1.2v2.6a1.7 1.7 0 0 1-1.7 1.7A13.4 13.4 0 0 1 4.9 5.2a1.7 1.7 0 0 1 1.7-1.7z"/></svg>
-        <a href="tel:+48185412217">18 541 22 17</a>
-        <a href="tel:+48530770208">530 770 208</a>
-      </p>
-      <p class="top-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2.8a6.2 6.2 0 0 0-6.2 6.2c0 4.6 6.2 11.2 6.2 11.2s6.2-6.6 6.2-11.2A6.2 6.2 0 0 0 12 2.8zm0 8.3a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z"/></svg>
-        Nowy Sącz, ul. Bora-Komorowskiego 22/1
-      </p>
-      <p class="top-item">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 8.1V12l2.5 1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Poniedziałek – Piątek: 09:00 – 16:00
-      </p>
-    </div>
-  </div>
+  ' . render_topbar() . '
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="brand" href="/">
@@ -634,6 +658,11 @@ function admin_edit_choices(array $offer): array
             'label' => 'Cennik',
             'hint' => 'Dodawanie, zmiana i usuwanie pozycji cennika.',
         ],
+        [
+            'href' => '/admin/kontakt',
+            'label' => 'Dane kontaktowe',
+            'hint' => 'Telefony, e-mail, adres i godziny (topbar, stopka, kontakt).',
+        ],
     ];
 }
 
@@ -820,26 +849,29 @@ const MAP_EMBED_SRC = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d258
 
 function render_contact(array $ctx): string
 {
+    $c = site_contact();
+    $desc = 'Biuro Rachunkowe AS ' . $c['owner'] . ', ' . $c['street'] . ', ' . $c['postal_city']
+        . '. Tel. ' . $c['phone'] . ', ' . $c['phone_mobile'] . ', ' . $c['email'] . '.';
     $page = subpage(
         'Kontakt',
-        'Biuro Rachunkowe AS Aneta Stanik, ul. Bora-Komorowskiego 22/1, 33-300 Nowy Sącz. Tel. 18 541 22 17, 530 770 208, biuro@biuro-as.pl.',
+        $desc,
         '/kontakt',
         page_media('/img/1-6.jpg', ['width' => 1900, 'height' => 1010, 'className' => 'page-banner page-banner--contact']) . '
     <div class="contact-grid">
       <div class="page-copy">
-        <p><strong>Biuro Rachunkowe AS</strong><br><em>Aneta Stanik</em></p>
+        <p><strong>Biuro Rachunkowe AS</strong><br><em>' . e($c['owner']) . '</em></p>
         <p>Skontaktuj się z nami – Biuro Rachunkowe AS</p>
-        <p>Szukasz niezawodnego partnera w zakresie księgowości w Nowym Sączu?<br>
+        <p>Szukasz niezawodnego partnera w zakresie księgowości w ' . e($c['city_short']) . '?<br>
         Biuro Rachunkowe AS jest tu, by Ci pomóc.<br>
         Zapraszamy do bezpośredniego kontaktu, aby omówić, w jaki sposób możemy wspierać Twój biznes.</p>
         <p><strong>Adres:</strong><br>
-        Biuro Rachunkowe AS Aneta Stanik<br>
-        ul. Bora-Komorowskiego 22/1<br>
-        33-300 Nowy Sącz woj. Małopolskie</p>
+        Biuro Rachunkowe AS ' . e($c['owner']) . '<br>
+        ' . e($c['street']) . '<br>
+        ' . e($c['postal_city'] . ' ' . $c['region']) . '</p>
         <p><strong>Kontakt telefoniczny:</strong><br>
-        Telefon stacjonarny: <a href="tel:+48185412217">18 541 22 17</a><br>
-        Telefon komórkowy: <a href="tel:+48530770208">530 770 208</a></p>
-        <p>E-mail: <a href="mailto:biuro@biuro-as.pl">biuro@biuro-as.pl</a></p>
+        Telefon stacjonarny: <a href="' . e(contact_tel_href($c['phone'])) . '">' . e($c['phone']) . '</a><br>
+        Telefon komórkowy: <a href="' . e(contact_tel_href($c['phone_mobile'])) . '">' . e($c['phone_mobile']) . '</a></p>
+        <p>E-mail: <a href="mailto:' . e($c['email']) . '">' . e($c['email']) . '</a></p>
         <p>Nasz zespół ekspertów księgowych jest dostępny, aby odpowiedzieć na Twoje pytania i zaproponować rozwiązania dostosowane do potrzeb Twojego biznesu. Niezależnie od tego, czy potrzebujesz pomocy w prowadzeniu księgowości, czy wsparcia w zakresie doradztwa finansowego, Biuro Rachunkowe AS jest gotowe, aby Cię wspierać.</p>
         <p>Zachęcamy do kontaktu bez względu na formę – czy to osobiście, telefonicznie, czy przez e-mail. Jesteśmy tu, aby ułatwić Ci prowadzenie biznesu, oferując profesjonalne usługi księgowe na najwyższym poziomie.</p>
       </div>
@@ -853,6 +885,52 @@ function render_contact(array $ctx): string
     </div>'
     );
     return layout(array_merge($ctx, shell_from($page)));
+}
+
+function render_contact_editor(array $ctx, array $contact): string
+{
+    $csrf = e((string) $ctx['csrf']);
+    $fields = [
+        'phone' => ['Telefon stacjonarny', 40],
+        'phone_mobile' => ['Telefon komórkowy', 40],
+        'email' => ['E-mail', 160],
+        'street' => ['Adres (ulica) — topbar / kontakt', 160],
+        'street_footer' => ['Adres (ulica) — stopka', 160],
+        'postal_city' => ['Kod i miasto (np. 33-300 Nowy Sącz)', 160],
+        'city_short' => ['Miasto (krótko)', 80],
+        'region' => ['Województwo / region', 80],
+        'hours' => ['Godziny otwarcia (tekst)', 160],
+        'hours_opens' => ['Godzina otwarcia (np. 09:00)', 8],
+        'hours_closes' => ['Godzina zamknięcia (np. 16:00)', 8],
+        'owner' => ['Właściciel / osoba na kontakcie', 80],
+    ];
+    $inputs = '';
+    foreach ($fields as $name => [$label, $max]) {
+        $inputs .= '<label class="offer-admin-lead">' . e($label) . '
+        <input name="' . e($name) . '" required maxlength="' . (int) $max . '" value="' . e((string) $contact[$name]) . '">
+      </label>';
+    }
+
+    $main = '<article class="wrap offer-admin">
+    <p class="offer-admin-back"><a href="/admin">← Wróć do wyboru</a></p>
+    <h1>Dane kontaktowe</h1>
+    <p>Prosty formularz — zmiany widać od razu w topbarze, stopce i na stronie kontaktu.</p>
+    <form class="offer-admin-form" method="post" action="/admin/kontakt">
+      <input type="hidden" name="csrf" value="' . $csrf . '">
+      ' . $inputs . '
+      <p class="offer-admin-actions">
+        <button type="submit" class="button">Zapisz dane</button>
+        <a class="button button-line" href="/admin">Anuluj</a>
+      </p>
+    </form>
+  </article>';
+
+    return layout(array_merge($ctx, [
+        'title' => 'Dane kontaktowe - Biuro rachunkowe AS Nowy Sącz - Księgowość',
+        'description' => 'Edycja danych kontaktowych Biura Rachunkowego AS.',
+        'active' => '',
+        'main' => $main,
+    ]));
 }
 
 function render_privacy(array $ctx): string
