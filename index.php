@@ -71,7 +71,7 @@ if ($method === 'POST') {
         }
         clear_failures($ip);
         regenerate_session_auth($APP_CONFIG);
-        redirect_to('/admin/oferta', $APP_CONFIG);
+        redirect_to('/admin', $APP_CONFIG);
     }
 
     if ($path === '/wyloguj') {
@@ -122,16 +122,20 @@ if ($method === 'POST') {
         redirect_to('/cennik', $APP_CONFIG);
     }
 
-    if ($path === '/admin/oferta') {
+    if (preg_match('#^/admin/oferta/(lead|ksiegowosc|kadry|pit)$#', $path, $m)) {
         if (!require_mutations($APP_CONFIG, $form)) {
             exit;
         }
-        $offerStore->save([
-            'lead' => $form['lead'],
-            'sections' => $form['sections'],
-        ]);
-        set_flash('Zapisano treści oferty.');
-        redirect_to('/admin/oferta', $APP_CONFIG);
+        $part = $m[1];
+        $current = $offerStore->get();
+        if ($part === 'lead') {
+            $current['lead'] = $form['lead'];
+        } else {
+            $current['sections'][$part] = $form['sections'][$part];
+        }
+        $offerStore->save($current);
+        set_flash('Zapisano. Możesz wybrać kolejną treść do edycji.');
+        redirect_to('/admin', $APP_CONFIG);
     }
 
     send_html(404, page_error('Nie znaleziono', 'Nie ma takiej strony.'), $APP_CONFIG);
@@ -142,7 +146,7 @@ $flash = take_flash();
 
 if ($path === '/logowanie') {
     if (session_user() === 'admin') {
-        redirect_to('/admin/oferta', $APP_CONFIG);
+        redirect_to('/admin', $APP_CONFIG);
     }
     send_html(200, render_login(view_context(''), $flash), $APP_CONFIG);
     exit;
@@ -153,12 +157,28 @@ if ($path === '/cennik') {
     exit;
 }
 
-if ($path === '/admin/oferta') {
+if ($path === '/admin' || $path === '/admin/oferta') {
     if (session_user() !== 'admin') {
-        set_flash('Zaloguj się, aby edytować ofertę.');
+        set_flash('Zaloguj się, aby edytować treści.');
         redirect_to('/logowanie', $APP_CONFIG);
     }
-    send_html(200, render_offer_editor(view_context($flash), $offerStore->get()), $APP_CONFIG);
+    if ($path === '/admin/oferta') {
+        redirect_to('/admin', $APP_CONFIG);
+    }
+    send_html(200, render_admin_hub(view_context($flash), $offerStore->get()), $APP_CONFIG);
+    exit;
+}
+
+if (preg_match('#^/admin/oferta/(lead|ksiegowosc|kadry|pit)$#', $path, $m)) {
+    if (session_user() !== 'admin') {
+        set_flash('Zaloguj się, aby edytować treści.');
+        redirect_to('/logowanie', $APP_CONFIG);
+    }
+    send_html(
+        200,
+        render_offer_part_editor(view_context($flash), $offerStore->get(), $m[1]),
+        $APP_CONFIG
+    );
     exit;
 }
 

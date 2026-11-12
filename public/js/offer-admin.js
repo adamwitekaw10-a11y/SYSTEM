@@ -4,14 +4,11 @@ document.documentElement.classList.add("js");
   const form = document.querySelector("[data-offer-admin-form]");
   if (!form || typeof tinymce === "undefined") return;
 
-  const keys = ["ksiegowosc", "kadry", "pit"];
-
-  const polish = {
-    language_url: undefined,
-  };
+  const textarea = form.querySelector("textarea.offer-admin-textarea");
+  if (!textarea || !textarea.id) return;
 
   tinymce.init({
-    selector: keys.map((key) => `#editor-${key}`).join(","),
+    selector: `#${CSS.escape(textarea.id)}`,
     base_url: "/vendor/tinymce",
     suffix: ".min",
     menubar: "edit insert format table",
@@ -40,30 +37,9 @@ document.documentElement.classList.add("js");
         editor.save();
       });
     },
-    ...polish,
   });
 
   form.addEventListener("submit", () => {
-    if (typeof tinymce !== "undefined") {
-      tinymce.triggerSave();
-    }
-  });
-
-  const tabs = [...form.querySelectorAll("[data-offer-admin-tab]")];
-  const panels = [...form.querySelectorAll("[data-offer-admin-panel]")];
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      const key = tab.getAttribute("data-offer-admin-tab");
-      tabs.forEach((item) => item.classList.toggle("is-active", item === tab));
-      panels.forEach((panel) => {
-        const match = panel.getAttribute("data-offer-admin-panel") === key;
-        panel.classList.toggle("is-active", match);
-        panel.hidden = !match;
-      });
-      const editor = tinymce.get(`editor-${key}`);
-      if (editor) {
-        editor.focus();
-      }
-    });
+    tinymce.triggerSave();
   });
 })();

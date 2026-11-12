@@ -151,7 +151,7 @@ function render_site_footer(?string $sessionUser): string
         $shortcutLinks .= '<li><a href="' . e($item['href']) . '">' . e($item['label']) . '</a></li>';
     }
     $editLink = $sessionUser
-        ? '<p class="footer-edit"><a href="/cennik">Edycja cennika</a> · <a href="/admin/oferta">Edycja oferty</a></p>'
+        ? '<p class="footer-edit"><a href="/admin">Panel edycji</a></p>'
         : '';
     $year = date('Y');
 
@@ -207,10 +207,8 @@ function layout(array $opts): string
 
     $adminBar = $sessionUser
         ? '<div class="admin-bar">
-        <p>Zalogowano. Panel edycji jest włączony.</p>
-        <a href="/cennik">Cennik</a>
-        <a href="/admin/oferta">Oferta</a>
-        <a href="/oferta">Podgląd oferty</a>
+        <p>Zalogowano</p>
+        <a href="/admin">Panel edycji</a>
         <form method="post" action="/wyloguj">
           <input type="hidden" name="csrf" value="' . e($csrf) . '">
           <button type="submit">Wyloguj</button>
@@ -242,7 +240,7 @@ function layout(array $opts): string
   <meta name="twitter:description" content="' . e($description) . '">
   <link rel="icon" href="/img/ico.jpg" type="image/jpeg">
   <link rel="apple-touch-icon" href="/img/ico.jpg">
-  <link rel="stylesheet" href="/css/style.css?v=63">
+  <link rel="stylesheet" href="/css/style.css?v=64">
   <script type="application/ld+json">' . $jsonLd . '</script>
 </head>
 <body>
@@ -608,57 +606,113 @@ function render_offer(array $ctx, ?array $offer = null): string
     return layout(array_merge($ctx, shell_from($page)));
 }
 
-function render_offer_editor(array $ctx, array $offer): string
+function admin_edit_choices(array $offer): array
 {
-    $sectionsHtml = '';
-    $first = true;
-    foreach (OFFER_SECTION_KEYS as $key) {
-        $section = $offer['sections'][$key];
-        $active = $first ? ' is-active' : '';
-        $hidden = $first ? '' : ' hidden';
-        $sectionsHtml .= '<div class="offer-admin-panel' . $active . '" data-offer-admin-panel="' . e($key) . '"' . $hidden . '>
-      <label class="offer-admin-title">Tytuł sekcji
-        <input name="title_' . e($key) . '" required maxlength="120" value="' . e($section['title']) . '">
-      </label>
-      <label class="offer-admin-body">Treść
-        <textarea id="editor-' . e($key) . '" name="html_' . e($key) . '" rows="18" class="offer-admin-textarea">' . e($section['html']) . '</textarea>
-      </label>
-    </div>';
-        $first = false;
+    return [
+        [
+            'href' => '/admin/oferta/lead',
+            'label' => 'Nagłówek oferty',
+            'hint' => 'Krótki tekst nad zakładkami (np. „Nasze usługi:”).',
+        ],
+        [
+            'href' => '/admin/oferta/ksiegowosc',
+            'label' => (string) $offer['sections']['ksiegowosc']['title'],
+            'hint' => 'Treść zakładki Księgowość.',
+        ],
+        [
+            'href' => '/admin/oferta/kadry',
+            'label' => (string) $offer['sections']['kadry']['title'],
+            'hint' => 'Treść zakładki Kadry i płace.',
+        ],
+        [
+            'href' => '/admin/oferta/pit',
+            'label' => (string) $offer['sections']['pit']['title'],
+            'hint' => 'Treść zakładki Rozliczenia PIT (tekst i tabela).',
+        ],
+        [
+            'href' => '/cennik',
+            'label' => 'Cennik',
+            'hint' => 'Dodawanie, zmiana i usuwanie pozycji cennika.',
+        ],
+    ];
+}
+
+function render_admin_hub(array $ctx, array $offer): string
+{
+    $cards = '';
+    foreach (admin_edit_choices($offer) as $item) {
+        $cards .= '<a class="admin-hub-card" href="' . e($item['href']) . '">
+        <span class="admin-hub-card-label">' . e($item['label']) . '</span>
+        <span class="admin-hub-card-hint">' . e($item['hint']) . '</span>
+      </a>';
     }
 
-    $tabs = '';
-    $first = true;
-    foreach (OFFER_SECTION_KEYS as $key) {
-        $label = $offer['sections'][$key]['title'];
-        $active = $first ? ' is-active' : '';
-        $tabs .= '<button type="button" class="offer-admin-tab' . $active . '" data-offer-admin-tab="' . e($key) . '">' . e($label) . '</button>';
-        $first = false;
-    }
+    $main = '<section class="admin-hub wrap">
+    <div class="admin-hub-panel">
+      <p class="eyebrow">Panel edycji</p>
+      <h1>Co chcesz edytować?</h1>
+      <p class="admin-hub-intro">Wybierz jedną treść. Otworzy się edytor tylko dla niej — bez długiego przewijania.</p>
+      <div class="admin-hub-grid">' . $cards . '</div>
+    </div>
+  </section>';
 
-    $main = '<article class="wrap offer-admin">
-    <h1>Edycja oferty</h1>
-    <p>Zmieniaj treści zakładek oferty edytorem wizualnym (jak w WordPressie). Zmiany są od razu widoczne na stronie <a href="/oferta">/oferta</a>.</p>
-    <form class="offer-admin-form" method="post" action="/admin/oferta" data-offer-admin-form>
-      <input type="hidden" name="csrf" value="' . e((string) $ctx['csrf']) . '">
-      <label class="offer-admin-lead">Nagłówek nad zakładkami
+    return layout(array_merge($ctx, [
+        'title' => 'Panel edycji - Biuro rachunkowe AS Nowy Sącz - Księgowość',
+        'description' => 'Wybór treści do edycji w panelu Biura Rachunkowego AS.',
+        'active' => '',
+        'main' => $main,
+    ]));
+}
+
+function render_offer_part_editor(array $ctx, array $offer, string $part): string
+{
+    $csrf = e((string) $ctx['csrf']);
+    $back = '<p class="offer-admin-back"><a href="/admin">← Wróć do wyboru</a></p>';
+
+    if ($part === 'lead') {
+        $main = '<article class="wrap offer-admin">
+    ' . $back . '
+    <h1>Nagłówek oferty</h1>
+    <p>Tekst wyświetlany nad zakładkami na stronie oferty.</p>
+    <form class="offer-admin-form" method="post" action="/admin/oferta/lead">
+      <input type="hidden" name="csrf" value="' . $csrf . '">
+      <label class="offer-admin-lead">Nagłówek
         <input name="lead" required maxlength="200" value="' . e((string) $offer['lead']) . '">
       </label>
-      <div class="offer-admin-tabs" role="tablist" aria-label="Sekcje oferty">' . $tabs . '</div>
-      ' . $sectionsHtml . '
       <p class="offer-admin-actions">
-        <button type="submit" class="button">Zapisz ofertę</button>
-        <a class="button button-line" href="/oferta">Anuluj / podgląd</a>
+        <button type="submit" class="button">Zapisz</button>
+        <a class="button button-line" href="/admin">Anuluj</a>
+      </p>
+    </form>
+  </article>';
+    } else {
+        $section = $offer['sections'][$part];
+        $main = '<article class="wrap offer-admin">
+    ' . $back . '
+    <h1>Edycja: ' . e((string) $section['title']) . '</h1>
+    <p>Edytor wizualny — zapisz, gdy skończysz.</p>
+    <form class="offer-admin-form" method="post" action="/admin/oferta/' . e($part) . '" data-offer-admin-form>
+      <input type="hidden" name="csrf" value="' . $csrf . '">
+      <label class="offer-admin-title">Tytuł sekcji
+        <input name="title_' . e($part) . '" required maxlength="120" value="' . e((string) $section['title']) . '">
+      </label>
+      <label class="offer-admin-body">Treść
+        <textarea id="editor-' . e($part) . '" name="html_' . e($part) . '" rows="18" class="offer-admin-textarea">' . e((string) $section['html']) . '</textarea>
+      </label>
+      <p class="offer-admin-actions">
+        <button type="submit" class="button">Zapisz</button>
+        <a class="button button-line" href="/admin">Anuluj</a>
       </p>
     </form>
   </article>
   <script src="/vendor/tinymce/tinymce.min.js" referrerpolicy="origin"></script>
-  <script src="/js/offer-admin.js?v=1" defer></script>';
+  <script src="/js/offer-admin.js?v=2" defer></script>';
+    }
 
     return layout(array_merge($ctx, [
-        'title' => 'Edycja oferty - Biuro rachunkowe AS Nowy Sącz - Księgowość',
-        'description' => 'Panel edycji treści oferty Biura Rachunkowego AS.',
-        'active' => '/oferta',
+        'title' => 'Edycja treści - Biuro rachunkowe AS Nowy Sącz - Księgowość',
+        'description' => 'Edycja wybranej treści oferty Biura Rachunkowego AS.',
+        'active' => '',
         'main' => $main,
     ]));
 }
@@ -683,6 +737,7 @@ function price_editor(array $items, string $csrf): string
     }
 
     return '<section class="editor">
+    <p class="offer-admin-back"><a href="/admin">← Wróć do wyboru</a></p>
     <h2>Edycja pozycji</h2>
     <p>Pozycja na stronie wyświetla się jako nazwa i cena w jednym wierszu. Zmiany są od razu widoczne dla odwiedzających.</p>
     <ul class="editor-list">' . $rows . '</ul>
@@ -940,8 +995,8 @@ function render_login(array $ctx, string $error = ''): string
         ? '<p class="form-error" role="alert">' . e($error) . '</p>'
         : '';
     $main = '<article class="wrap narrow">
-    <h1>Panel administracyjny</h1>
-    <p>Zaloguj się, aby edytować cennik oraz treści oferty.</p>
+    <h1>Panel edycji</h1>
+    <p>Zaloguj się, a potem wybierz, co chcesz edytować.</p>
     ' . $message . '
     <form class="login-form" method="post" action="/logowanie">
       <input type="hidden" name="csrf" value="' . e((string) $ctx['csrf']) . '">

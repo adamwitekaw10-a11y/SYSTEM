@@ -28,7 +28,7 @@ php -S 127.0.0.1:8080 router.php
 Strona: http://127.0.0.1:8080  
 Logowanie: `/logowanie` (użytkownik `admin`).
 
-Po zalogowaniu: `/cennik` (cennik), `/admin/oferta` (treści oferty — TinyMCE lokalnie w `public/vendor/tinymce`).
+Po zalogowaniu: `/admin` (wybór: lead / sekcje oferty / cennik). Edytor oferty: TinyMCE w `public/vendor/tinymce`.
 
 ## FTP / ALTe
 
