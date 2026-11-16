@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install original DXF vector and mesh tools
         run: |
-          python3 -m pip install --quiet ezdxf shapely trimesh mapbox-earcut matplotlib numpy lxml
+          python3 -m pip install --quiet ezdxf shapely trimesh mapbox-earcut matplotlib numpy lxml networkx
       - name: Build and validate 4 colour STL and 3MF from the DXF
         run: |
           python3 cad/build_ananas_from_dxf.py
