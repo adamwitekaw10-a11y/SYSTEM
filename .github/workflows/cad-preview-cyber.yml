@@ -5,6 +5,7 @@ on:
       - cad-cyber-ananas-50mm-20261116
     paths:
       - ".github/workflows/cad-preview-cyber.yml"
+      - "cad/cyber_ananas_50mm.scad"
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,7 +21,7 @@ jobs:
           sudo apt-get install -y -qq openscad xvfb
       - name: Render true CAD geometry and emit review image
         run: |
-          xvfb-run -a openscad -o CAD_PREVIEW.png --imgsize=640,640 --autocenter --viewall --projection=o -D 'part=4' cad/cyber_ananas_50mm.scad
+          xvfb-run -a openscad -o CAD_PREVIEW.png --imgsize=700,700 --camera=0,23,0,0,0,0,180 --projection=o -D 'part=4' cad/cyber_ananas_50mm.scad
           python3 - <<'PY'
           import base64
           raw=open('CAD_PREVIEW.png','rb').read()
