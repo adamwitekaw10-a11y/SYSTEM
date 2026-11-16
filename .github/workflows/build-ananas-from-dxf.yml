@@ -1,0 +1,32 @@
+name: Build exact DXF CYBER ANANAS 50mm
+on:
+  push:
+    branches: [cad-cyber-ananas-50mm-20261116]
+    paths:
+      - "cad/build_ananas_from_dxf.py"
+      - "cad/ananas.dxf"
+      - ".github/workflows/build-ananas-from-dxf.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install original DXF vector and mesh tools
+        run: |
+          python3 -m pip install --quiet ezdxf shapely trimesh mapbox-earcut matplotlib numpy lxml
+      - name: Build and validate 4 colour STL and 3MF from the DXF
+        run: |
+          python3 cad/build_ananas_from_dxf.py
+      - name: Include original drawing and editable generator
+        run: |
+          cp cad/ananas.dxf out_dxf/ananas_ORIGINAL.dxf
+          cp cad/build_ananas_from_dxf.py out_dxf/GENERUJ_Z_DXF.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CYBER_ANANAS_50mm_Z_DXF_4_KOLORY
+          path: out_dxf/
+          retention-days: 30
