@@ -7,6 +7,7 @@ from __future__ import annotations
 import base64
 import io
 import math
+import os
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import zipfile
@@ -23,8 +24,9 @@ from shapely.ops import unary_union
 import trimesh
 
 SOURCE = Path("cad/ananas.dxf")
-OUT = Path("out_dxf")
-OUT.mkdir(exist_ok=True)
+OUT = Path(os.environ.get("ANANAS_OUTPUT", "out_dxf"))
+OUT.mkdir(parents=True, exist_ok=True)
+PCB_EXPAND = float(os.environ.get("PCB_EXPAND_MM", "0"))
 
 # Exact DXF colours: 18 is the original black base, 4 teal, 7 white, 51 gold.
 STYLES = {
@@ -84,6 +86,29 @@ def even_odd_region(items):
     return geom
 
 all_regions = {c:even_odd_region(items) for c,items in shapes.items()}
+if PCB_EXPAND > 0:
+    # Source B4 is the single exact vector outline containing thin PCB tracks
+    # and inner cyan circuitry ring. A gentle planar offset makes those
+    # hairline tracks printable with the standard 0.4 mm FDM nozzle.
+    # All lettering, the pineapple diamond tiles and gold accents stay exact.
+    revised=[]
+    for handle, poly in shapes[4]:
+        if handle=="B4":
+            enlarged = poly.buffer(PCB_EXPAND, join_style=1, quad_segs=16)
+            enlarged = enlarged.intersection(all_regions[18]).difference(
+                all_regions[7].union(all_regions[51])
+            )
+            new_islands=polygons(enlarged) if "polygons" in globals() else (
+                list(enlarged.geoms) if enlarged.geom_type=="MultiPolygon" else [enlarged]
+            )
+            revised.extend((handle+"."+str(i),g) for i,g in enumerate(new_islands))
+            print("PCB B4 outline expanded by",PCB_EXPAND,"mm per side",
+                  "islands",len(new_islands),"area before",round(poly.area,3),
+                  "after",round(enlarged.area,3),flush=True)
+        else:
+            revised.append((handle,poly))
+    shapes[4]=revised
+    all_regions[4]=even_odd_region(shapes[4])
 base = all_regions[18]
 assert len(shapes[18]) == 2, "Outer silhouette and ring aperture expected"
 assert base.area > 1800
@@ -246,7 +271,7 @@ print("DXF3D_IMAGE_END")
 
 (OUT/"INSTRUKCJA_DRUKU.txt").write_text(
     "CYBER ANANAS - BRELOK 50 mm - ORYGINALNE KONTURY DXF\n\n"
-    "Model wykonany bez zmiany liter i ananasa: zachowane oryginalne kontury z ananas.dxf.\n"
+    "Model wykonany bez zmiany liter i ananasa: zachowane oryginalne kontury z ananas.dxf.\n"    ("Wariant pod dysze 0.4 mm: sciezki elektroniczne poszerzone o " + str(PCB_EXPAND) + " mm na strone.\n" if PCB_EXPAND>0 else "Wariant: oryginalne szerokosci sciezek z DXF.\n")
     "Wymiary: ok. 49.39 x 50.00 x 3.40 mm.\n"
     "Kolory: czarny (korpus), zielono-niebieski, bialy, zloty.\n\n"
     "BAMBU STUDIO:\n"
