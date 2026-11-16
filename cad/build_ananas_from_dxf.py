@@ -271,7 +271,8 @@ print("DXF3D_IMAGE_END")
 
 (OUT/"INSTRUKCJA_DRUKU.txt").write_text(
     "CYBER ANANAS - BRELOK 50 mm - ORYGINALNE KONTURY DXF\n\n"
-    "Model wykonany bez zmiany liter i ananasa: zachowane oryginalne kontury z ananas.dxf.\n"    ("Wariant pod dysze 0.4 mm: sciezki elektroniczne poszerzone o " + str(PCB_EXPAND) + " mm na strone.\n" if PCB_EXPAND>0 else "Wariant: oryginalne szerokosci sciezek z DXF.\n")
+    "Model wykonany bez zmiany liter i ananasa: zachowane oryginalne kontury z ananas.dxf.\n"
+    + ("Wariant pod dysze 0.4 mm: sciezki elektroniczne poszerzone o " + str(PCB_EXPAND) + " mm na strone.\n" if PCB_EXPAND>0 else "Wariant: oryginalne szerokosci sciezek z DXF.\n") +
     "Wymiary: ok. 49.39 x 50.00 x 3.40 mm.\n"
     "Kolory: czarny (korpus), zielono-niebieski, bialy, zloty.\n\n"
     "BAMBU STUDIO:\n"
