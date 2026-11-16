@@ -20,13 +20,14 @@ jobs:
           python3 -m pip install --quiet ezdxf shapely trimesh mapbox-earcut matplotlib numpy lxml networkx
       - name: Build and validate 4 colour STL and 3MF from the DXF
         run: |
-          python3 cad/build_ananas_from_dxf.py
+          ANANAS_OUTPUT=out_dxf/01_ORYGINAL_DXF PCB_EXPAND_MM=0 python3 cad/build_ananas_from_dxf.py
+          ANANAS_OUTPUT=out_dxf/02_OPTYMALIZOWANY_DYSZA_04 PCB_EXPAND_MM=0.15 python3 cad/build_ananas_from_dxf.py
       - name: Include original drawing and editable generator
         run: |
           cp cad/ananas.dxf out_dxf/ananas_ORIGINAL.dxf
           cp cad/build_ananas_from_dxf.py out_dxf/GENERUJ_Z_DXF.py
       - uses: actions/upload-artifact@v4
         with:
-          name: CYBER_ANANAS_50mm_Z_DXF_4_KOLORY
+          name: CYBER_ANANAS_DXF_ORYGINAL_I_DYSZA04
           path: out_dxf/
           retention-days: 30
