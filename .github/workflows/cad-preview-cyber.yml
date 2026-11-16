@@ -1,0 +1,33 @@
+name: CAD preview CYBER ANANAS
+on:
+  push:
+    branches:
+      - cad-cyber-ananas-50mm-20261116
+    paths:
+      - ".github/workflows/cad-preview-cyber.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install rendering tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq openscad xvfb
+      - name: Render true CAD geometry and emit review image
+        run: |
+          xvfb-run -a openscad -o CAD_PREVIEW.png --imgsize=640,640 --autocenter --viewall --projection=o -D 'part=4' cad/cyber_ananas_50mm.scad
+          python3 - <<'PY'
+          import base64
+          raw=open('CAD_PREVIEW.png','rb').read()
+          data=base64.b64encode(raw).decode()
+          print('PNG_MARKER_BEGIN')
+          for i in range(0,len(data),320):
+              print('PNGCHUNK:'+data[i:i+320])
+          print('PNG_MARKER_END')
+          print('Preview bytes:',len(raw))
+          PY
