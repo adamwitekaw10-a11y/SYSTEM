@@ -38,9 +38,9 @@ module badge2d(){
 }
 module fruit_outline(){
     polygon(points=[
-        for(i=[0:119])
-            let(a=360*i/120)
-                [6.1*cos(a)*(1-.08*sin(a)),26.85+6.65*sin(a)]
+        for(i=[0:191])
+            let(a=360*i/192)
+                [5.95*cos(a)*(1-.055*sin(a)),26.85+7.22*sin(a)]
     ]);
 }
 module diamond_grooves(){
@@ -49,8 +49,8 @@ module diamond_grooves(){
         for(k=[-9:9])
             translate([0,26.8])
                 rotate(a)
-                    translate([k*2.8+1.4,0])
-                        square([.48,32],center=true);
+                    translate([k*3.10+1.55,0])
+                        square([.54,34],center=true);
 }
 module pictogram(kind){
     if(kind==0){ // keyhole
@@ -135,7 +135,8 @@ module pineapple(){
             difference(){
                 fruit_outline();
                 diamond_grooves();
-                security_glyphs();
+                // Clean unmarked rhombuses: visible technology-inspired lattice,
+                // no miniature signs that could break during 0.4 mm printing.
             }
             crown();
         }
@@ -157,25 +158,66 @@ module traces(){
             translate([side*end_x,yy+shift]) circle(d=.9,$fn=20);
         }
 }
-module cyber_word(){
-    difference(){
-        // Extended squared technical typography.
-        translate([0,13.2])
-            resize([38.2,5.65],auto=false)
-                text("CYBER",size=6,font="DejaVu Sans:style=Bold",
-                     halign="center",valign="bottom");
-        // Controlled scanline slots resemble the original cyber logotype.
-        translate([-16.0,16.25]) square([6.4,.46],center=true);
-        translate([2.0,16.25]) square([7.3,.46],center=true);
-        translate([10.0,16.25]) square([6.6,.46],center=true);
-        translate([17.2,16.25]) square([3.1,.46],center=true);
+
+/*
+ * Purpose-drawn geometric lettering. Each character is an analytic outline,
+ * built from constant-width rounded-stroke curves instead of a stock font.
+ * This keeps corners clean and gives CYBER the technical horizontal look of
+ * the supplied reference, and ANANAS the oblique angular letter shapes.
+ */
+module cyber_glyph(g){
+    if(g=="C"){
+        stroke([[5.24,5.48],[1.38,5.48],[.55,4.7],[.55,1.24],[1.38,.52],[5.24,.52]],1.09);
     }
+    if(g=="Y"){
+        stroke([[.45,5.52],[2.78,2.94],[5.17,5.52]],1.08);
+        stroke([[2.78,2.94],[2.78,.50]],1.08);
+    }
+    if(g=="B"){
+        stroke([[.52,.50],[.52,5.50],[4.45,5.50],[5.07,4.88],
+                [5.07,3.78],[4.45,3.08],[.68,3.08]],1.09);
+        stroke([[4.45,3.08],[5.12,2.40],[5.12,1.15],
+                [4.47,.50],[.52,.50]],1.09);
+    }
+    if(g=="E"){
+        stroke([[5.2,5.50],[.56,5.50],[.56,.50],[5.2,.50]],1.09);
+        stroke([[.75,3.02],[4.75,3.02]],1.09);
+    }
+    if(g=="R"){
+        stroke([[.50,.50],[.50,5.50],[4.38,5.50],[5.12,4.82],
+                [5.12,3.71],[4.38,3.04],[.68,3.04]],1.09);
+        stroke([[3.12,3.04],[5.30,.50]],1.09);
+    }
+}
+module ananas_glyph(g){
+    if(g=="A"){
+        stroke([[.45,.48],[2.78,5.47],[5.12,.48]],.94);
+        stroke([[1.40,2.23],[4.18,2.23]],.84);
+    }
+    if(g=="N"){
+        stroke([[.49,.47],[.49,5.47],[5.08,.47],[5.08,5.47]],.94);
+    }
+    if(g=="S"){
+        stroke([[5.05,5.46],[1.34,5.46],[.54,4.73],[.54,3.66],
+                [5.00,2.25],[5.00,1.16],[4.26,.47],[.54,.47]],.97);
+    }
+}
+module cyber_word(){
+    translate([0,13.15])
+        resize([38.15,5.65],auto=false)
+            translate([-16.05,0])
+                for(i=[0:4])
+                    translate([i*6.53,0])
+                        cyber_glyph("CYBER"[i]);
 }
 module ananas_word(){
     translate([0,8.4])
-      resize([34.0,4.20],auto=false)
-        text("ANANAS",size=5.4,font="DejaVu Sans:style=Bold",
-             halign="center",valign="bottom");
+        resize([34.2,4.25],auto=false)
+            multmatrix([[1,.15,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])
+                translate([-17.80,0])
+                    for(i=[0:5])
+                        translate([i*5.95,0])
+                            ananas_glyph("ANANAS"[i]);
 }
 module white2d(){ cyber_word(); }
 module teal2d(){ arc(21.65,.95); traces(); pineapple(); ananas_word(); }
