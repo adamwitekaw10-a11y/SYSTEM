@@ -191,28 +191,34 @@ module cyber_glyph(g){
 }
 module ananas_glyph(g){
     if(g=="A"){
-        stroke([[.45,.48],[2.78,5.47],[5.12,.48]],.94);
-        stroke([[1.40,2.23],[4.18,2.23]],.84);
+        stroke([[.45,.48],[2.78,5.47],[5.12,.48]],1.25);
+        stroke([[1.40,2.23],[4.18,2.23]],1.08);
     }
     if(g=="N"){
-        stroke([[.49,.47],[.49,5.47],[5.08,.47],[5.08,5.47]],.94);
+        stroke([[.49,.47],[.49,5.47],[5.08,.47],[5.08,5.47]],1.25);
     }
     if(g=="S"){
         stroke([[5.05,5.46],[1.34,5.46],[.54,4.73],[.54,3.66],
-                [5.00,2.25],[5.00,1.16],[4.26,.47],[.54,.47]],.97);
+                [5.00,2.25],[5.00,1.16],[4.26,.47],[.54,.47]],1.25);
     }
 }
 module cyber_word(){
-    translate([0,13.15])
-        resize([38.15,5.65],auto=false)
-            translate([-16.05,0])
-                for(i=[0:4])
-                    translate([i*6.53,0])
-                        cyber_glyph("CYBER"[i]);
+    difference(){
+        translate([0,13.15])
+            resize([38.15,5.65],auto=false)
+                translate([-16.05,0])
+                    for(i=[0:4])
+                        translate([i*6.53,0])
+                            cyber_glyph("CYBER"[i]);
+        // Carefully positioned horizontal cyber cuts; no pixel-derived edges.
+        for(slot=[[-16.3,6.5],[.4,6.6],[8.0,6.6],[15.35,6.0]])
+            translate([slot[0],16.15])
+                square([slot[1],.39],center=true);
+    }
 }
 module ananas_word(){
-    translate([0,8.4])
-        resize([34.2,4.25],auto=false)
+    translate([0,7.65])
+        resize([33.2,4.40],auto=false)
             multmatrix([[1,.15,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])
                 translate([-17.80,0])
                     for(i=[0:5])
