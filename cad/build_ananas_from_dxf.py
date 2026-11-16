@@ -216,6 +216,13 @@ with zipfile.ZipFile(threemf) as test:
     assert len(parsed.findall(".//"+coretag("mesh")))==4
     assert len(parsed.findall(".//"+coretag("component")))==4
 print("3MF XML validated:",threemf.name,"bytes",threemf.stat().st_size,flush=True)
+try:
+    preview_scene=trimesh.load(str(threemf),force="scene")
+    print("Independent 3MF scene import: meshes",len(preview_scene.geometry),
+          "bounds",np.round(preview_scene.bounds,3),flush=True)
+except Exception as exc:
+    print("Independent 3MF importer warning:",repr(exc),flush=True)
+
 
 fig,ax=plt.subplots(figsize=(7,7))
 background="#f5f2ee"
@@ -224,7 +231,7 @@ for color in (18,4,51,7):
     for g in polygons(regions[color]):
         ax.add_patch(MplPolygon(list(g.exterior.coords),closed=True,facecolor=STYLES[color][1],linewidth=0))
         for hole in g.interiors:
-            ax.add_patch(MplPolygon(list(hole.coords),closed=True,facecolor=background,linewidth=0))
+            ax.add_patch(MplPolygon(list(hole.coords),closed=True,facecolor=(background if color==18 else STYLES[18][1]),linewidth=0))
 ax.set_xlim(-28,28);ax.set_ylim(-3,53)
 ax.set_aspect("equal");ax.axis("off")
 plt.subplots_adjust(0,0,1,1)
