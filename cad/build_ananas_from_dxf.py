@@ -120,17 +120,35 @@ part_meshes={}
 for color in (18,4,7,51):
     geom=regions[color]
     submeshes=[]
-    for polygon in polygons(geom):
+    # Distinct artwork islands stay as independent, manifold solid shells.
+    # Unioning the long thin PCB paths to adjacent diamond cells creates
+    # zero-width tangent contacts that otherwise break FDM mesh closure.
+    pieces=(
+        [(handle,translate_polygon(p)) for handle,p in shapes[color]]
+        if color in (4,7) else
+        [("merged",p) for p in polygons(geom)]
+    )
+    for handle,polygon in pieces:
         if polygon.area<.0001:
             continue
-        m=trimesh.creation.extrude_polygon(
-            polygon, height=BASE_H if color==18 else ART_H, engine="earcut"
-        )
+        m=None
+        for tolerance in (0,.004,.010,.020):
+            candidate=(polygon if tolerance==0 else
+                polygon.simplify(tolerance,preserve_topology=True))
+            if candidate.geom_type!="Polygon":
+                continue
+            m=trimesh.creation.extrude_polygon(
+                candidate,height=BASE_H if color==18 else ART_H,
+                engine="earcut"
+            )
+            if m.is_watertight:
+                if tolerance: print("Tiny spline tolerance fix",handle,tolerance,flush=True)
+                break
+        if m is None or not m.is_watertight:
+            raise ValueError(f"Nonwatertight DXF contour {handle} of colour {color}")
         if color != 18:
             m.apply_translation([0,0,BASE_H])
         m.remove_unreferenced_vertices()
-        if not m.is_watertight:
-            raise ValueError(f"Nonwatertight DXF contour of colour {color}")
         submeshes.append(m)
     assert submeshes, f"Empty colour {color}"
     combined=trimesh.util.concatenate(submeshes)
