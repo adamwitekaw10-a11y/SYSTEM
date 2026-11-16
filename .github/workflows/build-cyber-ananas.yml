@@ -1,0 +1,88 @@
+name: Build CYBER ANANAS 50mm CAD
+on:
+  push:
+    branches:
+      - cad-cyber-ananas-50mm-20261116
+    paths:
+      - "cad/cyber_ananas_50mm.scad"
+      - ".github/workflows/build-cyber-ananas.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cad:
+    name: Export and validate four STL parts
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install CAD engine
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq openscad xvfb
+      - name: Export 4 color parts
+        run: |
+          mkdir -p out
+          openscad --export-format binstl -D 'part=0' -o out/01_CZARNY_PODSTAWA.stl cad/cyber_ananas_50mm.scad
+          openscad --export-format binstl -D 'part=1' -o out/02_BIALY_CYBER.stl cad/cyber_ananas_50mm.scad
+          openscad --export-format binstl -D 'part=2' -o out/03_TURKUS_ANANAS_I_SCIEZKI.stl cad/cyber_ananas_50mm.scad
+          openscad --export-format binstl -D 'part=3' -o out/04_ZLOTY_KLODKA_I_LUK.stl cad/cyber_ananas_50mm.scad
+      - name: Validate mesh closure and dimensions
+        run: |
+          python3 - <<'PY'
+          import glob,struct,collections
+          xs,ys,zs=[],[],[]
+          for path in sorted(glob.glob('out/*.stl')):
+              blob=open(path,'rb').read()
+              assert len(blob)>=84,path
+              n=struct.unpack_from('<I',blob,80)[0]
+              assert n>0 and len(blob)==84+n*50,(path,'bad STL',n,len(blob))
+              verts={}
+              edges=collections.Counter()
+              for i in range(n):
+                  off=84+i*50+12
+                  p=[struct.unpack_from('<fff',blob,off+12*j) for j in range(3)]
+                  ids=[]
+                  for xyz in p:
+                      key=tuple(round(v,4) for v in xyz)
+                      if key not in verts: verts[key]=len(verts)
+                      ids.append(verts[key])
+                      xs.append(xyz[0]);ys.append(xyz[1]);zs.append(xyz[2])
+                  for a,b in ((ids[0],ids[1]),(ids[1],ids[2]),(ids[2],ids[0])):
+                      edges[tuple(sorted((a,b)))]+=1
+              nonmanifold=sum(v!=2 for v in edges.values())
+              print(path,'triangles',n,'nonmanifold edges',nonmanifold,flush=True)
+              assert nonmanifold==0,(path,'non-manifold')
+          dims=[max(q)-min(q) for q in (xs,ys,zs)]
+          print('Overall dimensions (mm):',dims,flush=True)
+          assert 49.4<=dims[1]<=50.6, 'Height differs from 50 mm'
+          assert 43<=dims[0]<=50, 'Unexpected width'
+          assert 3<=dims[2]<=4.5, 'Unexpected thickness'
+          PY
+      - name: Export optional front-view image
+        continue-on-error: true
+        run: |
+          xvfb-run -a openscad -o out/PODGLAD.png --imgsize=1000,1000 --autocenter --viewall --projection=o -D 'part=4' cad/cyber_ananas_50mm.scad
+      - name: Include instructions and CAD source
+        run: |
+          cp cad/cyber_ananas_50mm.scad out/ZRODLO_EDITOWALNE.scad
+          python3 - <<'PY'
+          from pathlib import Path
+          Path('out/INSTRUKCJA.txt').write_text(
+              'CYBER ANANAS - brelok 50mm, cztery kolory\n'
+              'Rozpakuj ZIP. Zaznacz wszystkie 4 pliki STL naraz i przeciagnij razem do Bambu Studio.\n'
+              'Na pytanie o jeden obiekt z wieloma czesciami odpowiedz TAK.\n'
+              'Przypisz filaments: 01 czarny, 02 bialy, 03 turkusowy, 04 zloty.\n'
+              'Nie przesuwaj czesci osobno. Drukuj plasko, grafika do gory, bez podpor.\n'
+              'Dysza 0.4 mm, warstwa 0.12mm, Arachne; miniaturowe detale lepsze przy dyszy 0.2mm.\n'
+              'Zrodlo OpenSCAD jest edytowalne. Powierzchnie sa gladkie, bez tekstury warstw.\n',
+              encoding='utf8')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CYBER_ANANAS_50mm_4_KOLORY
+          path: out/
+          if-no-files-found: error
+          retention-days: 30
