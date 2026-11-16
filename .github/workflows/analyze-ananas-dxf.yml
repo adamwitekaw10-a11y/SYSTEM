@@ -1,0 +1,88 @@
+name: Analyze original CYBER ANANAS DXF
+on:
+  push:
+    branches: [cad-cyber-ananas-50mm-20261116]
+    paths:
+      - ".github/workflows/analyze-ananas-dxf.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install vector geometry dependencies
+        run: |
+          python3 -m pip install --quiet ezdxf shapely matplotlib numpy
+      - name: Analyze DXF bezier paths and render exact vector artwork
+        run: |
+          python3 - <<'PY'
+          import ezdxf, math, base64
+          from ezdxf.path import make_path
+          from shapely.geometry import Polygon, MultiPolygon
+          import matplotlib
+          matplotlib.use("Agg")
+          import matplotlib.pyplot as plt
+          from matplotlib.patches import Polygon as MPLPolygon
+          doc=ezdxf.readfile("cad/ananas.dxf")
+          ents=list(doc.modelspace())
+          hatch_by_handle={int(e.dxf.handle,16):e for e in ents if e.dxftype()=="HATCH"}
+          colors={18:"#131719",4:"#09cdb9",51:"#d7a111",7:"#f4f5f7"}
+          output=[]
+          fails=[]
+          for e in ents:
+              if e.dxftype() not in ("SPLINE","LWPOLYLINE"):
+                  continue
+              try:
+                  path=make_path(e)
+                  points=[(p.x,p.y) for p in path.flattening(distance=.025,segments=12)]
+                  if len(points)<3: raise ValueError("too few points")
+                  g=Polygon(points)
+                  if not g.is_valid: g=g.buffer(0)
+                  if g.is_empty: raise ValueError("empty polygon")
+                  hatch=hatch_by_handle.get(int(e.dxf.handle,16)+1)
+                  color=hatch.dxf.color if hatch is not None else e.dxf.color
+                  output.append((int(color),g,e.dxf.handle,len(points)))
+              except Exception as exc:
+                  fails.append((e.dxf.handle,str(exc)))
+          print("DXF units:",doc.header.get("$INSUNITS"))
+          print("Entities:",len(ents),"vector contours:",len(output),"failures:",fails)
+          print("Color groups:",{c:sum(z[0]==c for z in output) for c in colors})
+          for col,geom,handle,pts in sorted(output,key=lambda z:-z[1].area):
+              print("SHAPE",handle,"color",col,"area",round(geom.area,3),"bounds",tuple(round(k,3) for k in geom.bounds),"vertices",pts,"valid",geom.is_valid)
+          assert not fails, str(fails)
+          assert len(output)==57, "Expected 56 smooth splines + 1 closed polyline"
+          fig,ax=plt.subplots(figsize=(6.8,6.8))
+          bg="#f6f4ee"
+          fig.patch.set_facecolor(bg)
+          ax.set_facecolor(bg)
+          def draw(g,col):
+              for q in (g.geoms if hasattr(g,"geoms") else [g]):
+                  if q.geom_type!="Polygon":continue
+                  ax.add_patch(MPLPolygon(list(q.exterior.coords),closed=True,linewidth=0,facecolor=col))
+                  for ring in q.interiors:
+                      ax.add_patch(MPLPolygon(list(ring.coords),closed=True,linewidth=0,facecolor=bg))
+          black=sorted((it for it in output if it[0]==18),key=lambda it:-it[1].area)
+          for idx,(_,geom,handle,_) in enumerate(black):
+              draw(geom,colors[18] if idx==0 else bg)
+          for color in (4,51,7):
+              for c,geom,_,_ in output:
+                  if c==color:draw(geom,colors[color])
+          ax.set_xlim(57,113);ax.set_ylim(-101,-44);ax.set_aspect("equal");ax.axis("off")
+          plt.subplots_adjust(0,0,1,1)
+          fig.savefig("DXF_ORIGINAL_PREVIEW.png",dpi=105,facecolor=bg)
+          raw=open("DXF_ORIGINAL_PREVIEW.png","rb").read()
+          data=base64.b64encode(raw).decode()
+          print("DXF_MARKER_BEGIN")
+          for i in range(0,len(data),400):
+              print("DXFCHUNK:"+data[i:i+400])
+          print("DXF_MARKER_END")
+          print("DXF preview bytes",len(raw))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DXF_ORIGINAL_PREVIEW
+          path: DXF_ORIGINAL_PREVIEW.png
+          retention-days: 20
