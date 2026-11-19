@@ -1035,7 +1035,7 @@ p { margin: 0 0 1rem; }
   background:
     linear-gradient(135deg, #4a1027 0%, #6b1838 48%, #3a0f1d 100%);
   color: #f7f2ed;
-  padding: 3.2rem 0 3.6rem;
+  padding: 1.45rem 0 1.6rem;
 }
 
 .page-hero-blobs {
@@ -1081,13 +1081,21 @@ p { margin: 0 0 1rem; }
 
 .page-hero .eyebrow {
   color: #ead7c1;
-  margin-top: 1rem;
+  margin: 0.45rem 0 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
 }
 
 .page-hero h1 {
-  margin: 0.35rem 0 0;
+  margin: 0.15rem 0 0;
   color: #fff;
-  font-size: clamp(2.2rem, 4.4vw, 3.2rem);
+  font-size: clamp(1.55rem, 3.2vw, 2.15rem);
+  line-height: 1.15;
+}
+
+.page-hero .crumbs {
+  font-size: 0.85rem;
+  line-height: 1.35;
 }
 
 .page-split {
@@ -2283,6 +2291,18 @@ input {
   .benefits-media img {
     transform: none;
     will-change: auto;
+  }
+
+  .page-hero {
+    padding: 1.1rem 0 1.2rem;
+  }
+
+  .page-hero h1 {
+    font-size: clamp(1.4rem, 6.2vw, 1.85rem);
+  }
+
+  .page-hero .eyebrow {
+    margin: 0.35rem 0 0.25rem;
   }
 }
 
