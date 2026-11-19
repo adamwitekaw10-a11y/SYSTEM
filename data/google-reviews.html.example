@@ -1,0 +1,6 @@
+<!--
+  Wzorzec: skopiuj jako data/google-reviews.html albo ustaw google_reviews_embed / env.
+
+  Aktualny embed Biura AS (Trustindex, bez fikcyjnych opinii):
+-->
+<script defer async src="https://cdn.trustindex.io/loader.js?2c55db586bcf14953016122a798"></script>

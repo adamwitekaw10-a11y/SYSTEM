@@ -52,13 +52,7 @@ if (heroSlider) {
     const setSlide = (next) => {
       index = (next + slides.length) % slides.length;
       slides.forEach((slide, slideIndex) => {
-        const active = slideIndex === index;
-        slide.classList.toggle("is-active", active);
-        if (active) {
-          slide.style.animation = "none";
-          void slide.offsetWidth;
-          slide.style.animation = "";
-        }
+        slide.classList.toggle("is-active", slideIndex === index);
       });
       [...dots.children].forEach((dot, dotIndex) => {
         dot.setAttribute("aria-selected", dotIndex === index ? "true" : "false");
@@ -247,6 +241,48 @@ if (cookieBanner && cookieAccept) {
   });
 }
 
+/* Google reviews widget — auto-mount when section nears viewport (scripts from <template> re-created) */
+const mountReviewsEmbed = (box) => {
+  if (!box || box.classList.contains("is-loaded")) return;
+  const template = box.querySelector("[data-reviews-template]");
+  if (!(template instanceof HTMLTemplateElement)) return;
+  const fragment = template.content.cloneNode(true);
+  const host = document.createElement("div");
+  host.className = "reviews-embed-host";
+  const scripts = [];
+  fragment.querySelectorAll("script").forEach((oldScript) => {
+    const script = document.createElement("script");
+    for (const attr of oldScript.attributes) {
+      script.setAttribute(attr.name, attr.value);
+    }
+    if (oldScript.textContent) script.textContent = oldScript.textContent;
+    scripts.push(script);
+    oldScript.remove();
+  });
+  host.appendChild(fragment);
+  const status = box.querySelector("[data-reviews-status]");
+  if (status) status.remove();
+  box.appendChild(host);
+  scripts.forEach((script) => host.appendChild(script));
+  box.classList.add("is-loaded");
+};
+
+document.querySelectorAll("[data-reviews-embed]").forEach((box) => {
+  if (!("IntersectionObserver" in window)) {
+    mountReviewsEmbed(box);
+    return;
+  }
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      mountReviewsEmbed(box);
+    },
+    { rootMargin: "200px 0px", threshold: 0.05 },
+  );
+  observer.observe(box);
+});
+
 /* Google Maps — load only after explicit click */
 document.querySelectorAll("[data-map-embed]").forEach((box) => {
   const button = box.querySelector("[data-map-load]");
@@ -269,6 +305,20 @@ if (offerTabsRoot) {
   const panels = [...offerTabsRoot.querySelectorAll("[data-offer-panel]")];
   const validIds = new Set(tabs.map((tab) => tab.getAttribute("data-offer-tab")));
 
+  const hydrateDeferredMedia = (panel) => {
+    panel.querySelectorAll("source[data-srcset]").forEach((source) => {
+      source.setAttribute("srcset", source.getAttribute("data-srcset") || "");
+      source.removeAttribute("data-srcset");
+    });
+    panel.querySelectorAll("img[data-src]").forEach((img) => {
+      const src = img.getAttribute("data-src");
+      if (src) {
+        img.setAttribute("src", src);
+        img.removeAttribute("data-src");
+      }
+    });
+  };
+
   const activateOfferTab = (id, { updateHash = true } = {}) => {
     if (!validIds.has(id)) id = "ksiegowosc";
     tabs.forEach((tab) => {
@@ -281,6 +331,7 @@ if (offerTabsRoot) {
       const selected = panel.getAttribute("data-offer-panel") === id;
       panel.classList.toggle("is-active", selected);
       panel.hidden = !selected;
+      if (selected) hydrateDeferredMedia(panel);
     });
     if (updateHash) {
       const next = `#${id}`;

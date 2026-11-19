@@ -22,11 +22,28 @@ function security_headers(array $config): void
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: strict-origin-when-cross-origin');
-    header(
-        "Content-Security-Policy: default-src 'self'; img-src 'self'; style-src 'self'; script-src 'self'; frame-src https://www.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
-    );
+    $reviewsOn = google_reviews_embed_configured($config);
+    $imgSrc = "'self' data:";
+    $scriptSrc = "'self'";
+    $frameSrc = "'self' https://www.google.com";
+    $connectSrc = "'self'";
+    $styleSrc = "'self' 'unsafe-inline'";
+    if ($reviewsOn) {
+        // Trustindex (darmowy widget opinii Google) — tylko gdy embed skonfigurowany.
+        $imgSrc .= ' https://cdn.trustindex.io https://lh3.googleusercontent.com https://*.googleusercontent.com https://www.google.com https://maps.gstatic.com';
+        $scriptSrc .= ' https://cdn.trustindex.io';
+        $frameSrc .= ' https://cdn.trustindex.io https://www.google.com https://maps.google.com';
+        $connectSrc .= ' https://cdn.trustindex.io https://www.google.com';
+        $styleSrc .= ' https://cdn.trustindex.io';
+    }
+    $csp = "default-src 'self'; img-src {$imgSrc}; style-src {$styleSrc}; script-src {$scriptSrc}; frame-src {$frameSrc}; connect-src {$connectSrc}; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'";
+    if (is_https_request($config)) {
+        $csp .= '; upgrade-insecure-requests';
+    }
+    header('Content-Security-Policy: ' . $csp);
     header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
     header('Cross-Origin-Opener-Policy: same-origin');
+    header('Cross-Origin-Resource-Policy: same-origin');
     header('X-Permitted-Cross-Domain-Policies: none');
     if (is_https_request($config)) {
         header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
@@ -59,7 +76,7 @@ function page_error(string $title, string $message): string
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>' . e($title) . '</title>
-  <link rel="stylesheet" href="/css/style.css?v=62">
+  <link rel="stylesheet" href="/css/style.min.css?v=72">
 </head>
 <body>
   <main class="wrap narrow">
@@ -85,13 +102,43 @@ function clean_text(mixed $value, int $max): ?string
 
 function read_post(): array
 {
-    return [
+    $data = [
         'csrf' => (string) ($_POST['csrf'] ?? ''),
         'username' => (string) ($_POST['username'] ?? ''),
         'password' => (string) ($_POST['password'] ?? ''),
+        'current_password' => (string) ($_POST['current_password'] ?? ''),
+        'new_username' => (string) ($_POST['new_username'] ?? ''),
+        'new_password' => (string) ($_POST['new_password'] ?? ''),
+        'new_password_confirm' => (string) ($_POST['new_password_confirm'] ?? ''),
         'name' => (string) ($_POST['name'] ?? ''),
         'price' => (string) ($_POST['price'] ?? ''),
+        'lead' => (string) ($_POST['lead'] ?? ''),
+        'sections' => [],
+        'contact' => [],
     ];
+    foreach (['ksiegowosc', 'kadry', 'pit'] as $key) {
+        $data['sections'][$key] = [
+            'title' => (string) ($_POST['title_' . $key] ?? ''),
+            'html' => (string) ($_POST['html_' . $key] ?? ''),
+        ];
+    }
+    foreach ([
+        'phone',
+        'phone_mobile',
+        'email',
+        'street',
+        'street_footer',
+        'postal_city',
+        'city_short',
+        'region',
+        'hours',
+        'hours_opens',
+        'hours_closes',
+        'owner',
+    ] as $key) {
+        $data['contact'][$key] = (string) ($_POST[$key] ?? '');
+    }
+    return $data;
 }
 
 function request_path(): ?string
