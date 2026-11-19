@@ -1864,18 +1864,6 @@ input {
   font-size: 0.95rem;
 }
 
-.reviews-embed-note {
-  margin: 0 0 1rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.reviews-embed.is-loaded .reviews-embed-note {
-  margin-top: 1rem;
-  margin-bottom: 0;
-}
-
 .reviews-cta-btn {
   background: var(--reviews-accent);
   border-color: var(--reviews-accent);

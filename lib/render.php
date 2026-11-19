@@ -297,7 +297,7 @@ function layout(array $opts): string
   <link rel="alternate icon" href="/img/ico.jpg" type="image/jpeg">
   <link rel="apple-touch-icon" href="/img/ico.jpg">
   ' . $preloadLinks . '
-  <link rel="stylesheet" href="/css/style.min.css?v=71">
+  <link rel="stylesheet" href="/css/style.min.css?v=72">
   <script type="application/ld+json">' . $jsonLd . '</script>
 </head>
 <body>
@@ -668,7 +668,6 @@ function render_google_reviews_section(array $ctx = []): string
     if ($hasEmbed) {
         $slot = '<div class="reviews-embed" data-reviews-embed>
       <p class="reviews-embed-status" data-reviews-status>Ładowanie opinii Google…</p>
-      <p class="reviews-embed-note">Widget (np. Trustindex) ładuje zewnętrzny skrypt w momencie wejścia sekcji w widok. Szczegóły: <a href="/polityka-prywatnosci">polityka prywatności</a> · <a href="/polityka-cookies">cookies</a>.</p>
       <template data-reviews-template>' . $embed . '</template>
     </div>';
     } else {
