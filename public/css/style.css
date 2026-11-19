@@ -1035,7 +1035,7 @@ p { margin: 0 0 1rem; }
   background:
     linear-gradient(135deg, #4a1027 0%, #6b1838 48%, #3a0f1d 100%);
   color: #f7f2ed;
-  padding: 1.45rem 0 1.6rem;
+  padding: 0.85rem 0 0.95rem;
 }
 
 .page-hero-blobs {
@@ -1071,7 +1071,7 @@ p { margin: 0 0 1rem; }
 .page-hero-inner {
   position: relative;
   z-index: 1;
-  max-width: 46rem;
+  max-width: 52rem;
 }
 
 .page-hero .crumbs,
@@ -1079,23 +1079,37 @@ p { margin: 0 0 1rem; }
   color: rgba(247, 242, 237, 0.72);
 }
 
-.page-hero .eyebrow {
-  color: #ead7c1;
-  margin: 0.45rem 0 0.35rem;
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
+.page-hero .crumbs {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.page-hero-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.85rem;
 }
 
 .page-hero h1 {
-  margin: 0.15rem 0 0;
+  margin: 0;
   color: #fff;
-  font-size: clamp(1.55rem, 3.2vw, 2.15rem);
-  line-height: 1.15;
+  font-size: clamp(1.35rem, 2.6vw, 1.75rem);
+  line-height: 1.2;
 }
 
-.page-hero .crumbs {
-  font-size: 0.85rem;
-  line-height: 1.35;
+.page-hero .eyebrow {
+  margin: 0;
+  color: #ead7c1;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.page-hero .eyebrow::before {
+  background: #ead7c1;
+  opacity: 0.7;
 }
 
 .page-split {
@@ -2294,15 +2308,19 @@ input {
   }
 
   .page-hero {
-    padding: 1.1rem 0 1.2rem;
+    padding: 0.7rem 0 0.8rem;
+  }
+
+  .page-hero-heading {
+    gap: 0.25rem 0.65rem;
   }
 
   .page-hero h1 {
-    font-size: clamp(1.4rem, 6.2vw, 1.85rem);
+    font-size: clamp(1.25rem, 5.5vw, 1.55rem);
   }
 
   .page-hero .eyebrow {
-    margin: 0.35rem 0 0.25rem;
+    white-space: normal;
   }
 }
 

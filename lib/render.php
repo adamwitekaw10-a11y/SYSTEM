@@ -297,7 +297,7 @@ function layout(array $opts): string
   <link rel="alternate icon" href="/img/ico.jpg" type="image/jpeg">
   <link rel="apple-touch-icon" href="/img/ico.jpg">
   ' . $preloadLinks . '
-  <link rel="stylesheet" href="/css/style.min.css?v=67">
+  <link rel="stylesheet" href="/css/style.min.css?v=68">
   <script type="application/ld+json">' . $jsonLd . '</script>
 </head>
 <body>
@@ -411,8 +411,10 @@ function shell_from(array $page): array
       </div>
       <div class="wrap page-hero-inner">
         <p class="crumbs"><a href="/">Strona główna</a> / ' . e($crumb) . '</p>
-        <p class="eyebrow">Biuro Rachunkowe AS</p>
-        <h1>' . e($titleShort) . '</h1>
+        <div class="page-hero-heading">
+          <h1>' . e($titleShort) . '</h1>
+          <p class="eyebrow">Biuro Rachunkowe AS</p>
+        </div>
       </div>
     </section>
     <section class="subpage-body">
