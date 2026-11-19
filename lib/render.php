@@ -297,7 +297,7 @@ function layout(array $opts): string
   <link rel="alternate icon" href="/img/ico.jpg" type="image/jpeg">
   <link rel="apple-touch-icon" href="/img/ico.jpg">
   ' . $preloadLinks . '
-  <link rel="stylesheet" href="/css/style.min.css?v=65">
+  <link rel="stylesheet" href="/css/style.min.css?v=66">
   <script type="application/ld+json">' . $jsonLd . '</script>
 </head>
 <body>
