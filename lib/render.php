@@ -552,10 +552,19 @@ function render_home(array $ctx): string
     </li>';
     }
 
+    // Bump when replacing hero WebP so CDN/browser cache picks up new banners.
+    $heroV = '2';
+    $hero1 = '/img/hero-slide-1.webp?v=' . $heroV;
+    $hero1sm = '/img/hero-slide-1-800.webp?v=' . $heroV;
+    $hero2 = '/img/hero-slide-2.webp?v=' . $heroV;
+    $hero2sm = '/img/hero-slide-2-800.webp?v=' . $heroV;
+    $hero1srcset = $hero1sm . ' 800w, ' . $hero1 . ' 1600w';
+    $hero2srcset = $hero2sm . ' 800w, ' . $hero2 . ' 1600w';
+
     $main = '<section class="hero" data-hero-slider>
       <div class="hero-slides" aria-hidden="true">
-        <img class="hero-photo is-active" src="/img/hero-slide-1.webp" srcset="/img/hero-slide-1-800.webp 800w, /img/hero-slide-1.webp 1600w" sizes="100vw" width="1600" height="532" alt="" fetchpriority="high" decoding="async">
-        <img class="hero-photo" src="/img/hero-slide-2.webp" srcset="/img/hero-slide-2-800.webp 800w, /img/hero-slide-2.webp 1600w" sizes="100vw" width="1600" height="534" alt="" loading="lazy" decoding="async">
+        <img class="hero-photo is-active" src="' . e($hero1) . '" srcset="' . e($hero1srcset) . '" sizes="100vw" width="1600" height="532" alt="" fetchpriority="high" decoding="async">
+        <img class="hero-photo" src="' . e($hero2) . '" srcset="' . e($hero2srcset) . '" sizes="100vw" width="1600" height="534" alt="" loading="lazy" decoding="async">
       </div>
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="hero-blob hero-blob-left" aria-hidden="true"></div>
@@ -617,10 +626,10 @@ function render_home(array $ctx): string
         'main' => $main,
         'preload' => [
             [
-                'href' => '/img/hero-slide-1.webp',
+                'href' => $hero1,
                 'as' => 'image',
                 'type' => 'image/webp',
-                'imagesrcset' => '/img/hero-slide-1-800.webp 800w, /img/hero-slide-1.webp 1600w',
+                'imagesrcset' => $hero1srcset,
                 'imagesizes' => '100vw',
                 'fetchpriority' => 'high',
             ],
