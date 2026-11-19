@@ -1,18 +1,6 @@
 <!--
-  Skopiuj ten plik jako data/google-reviews.html i wklej kod widgetu Trustindex
-  (lub innego darmowego embedu opinii Google).
+  Wzorzec: skopiuj jako data/google-reviews.html albo ustaw google_reviews_embed / env.
 
-  Albo ustaw w config.php:
-    'google_reviews_embed' => '<div>...</div><script src="https://cdn.trustindex.io/..." defer></script>',
-
-  Albo env GOOGLE_REVIEWS_EMBED.
-
-  Nie wklejaj fikcyjnych opinii ani ręcznej oceny — tylko oficjalny kod widgetu.
-  Widget ładuje się leniwie, gdy sekcja opinii wchodzi w widok (IntersectionObserver).
-
-  Skąd wziąć kod Trustindex (skrót):
-  1. Załóż darmowe konto na https://www.trustindex.io/
-  2. Połącz wizytówkę Google (Biuro Rachunkowe AS / share.google/…)
-  3. Widgets → wybierz layout (np. karuzela / 3 karty) → Copy embed code
-  4. Wklej HTML tutaj lub do config.php / env
+  Aktualny embed Biura AS (Trustindex, bez fikcyjnych opinii):
 -->
+<script defer async src="https://cdn.trustindex.io/loader.js?2c55db586bcf14953016122a798"></script>
