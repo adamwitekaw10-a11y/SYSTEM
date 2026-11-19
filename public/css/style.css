@@ -1088,7 +1088,7 @@ p { margin: 0 0 1rem; }
 .page-hero-heading {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   gap: 0.35rem 0.85rem;
 }
 
@@ -1096,7 +1096,7 @@ p { margin: 0 0 1rem; }
   margin: 0;
   color: #fff;
   font-size: clamp(1.35rem, 2.6vw, 1.75rem);
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .page-hero .eyebrow {
@@ -1104,7 +1104,9 @@ p { margin: 0 0 1rem; }
   color: #ead7c1;
   font-size: 0.68rem;
   letter-spacing: 0.1em;
+  line-height: 1;
   white-space: nowrap;
+  align-self: center;
 }
 
 .page-hero .eyebrow::before {
