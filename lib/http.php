@@ -22,7 +22,21 @@ function security_headers(array $config): void
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: strict-origin-when-cross-origin');
-    $csp = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src 'self' https://www.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'";
+    $reviewsOn = google_reviews_embed_configured($config);
+    $imgSrc = "'self' data:";
+    $scriptSrc = "'self'";
+    $frameSrc = "'self' https://www.google.com";
+    $connectSrc = "'self'";
+    $styleSrc = "'self' 'unsafe-inline'";
+    if ($reviewsOn) {
+        // Trustindex (darmowy widget opinii Google) — tylko gdy embed skonfigurowany.
+        $imgSrc .= ' https://cdn.trustindex.io https://lh3.googleusercontent.com https://*.googleusercontent.com https://www.google.com https://maps.gstatic.com';
+        $scriptSrc .= ' https://cdn.trustindex.io';
+        $frameSrc .= ' https://cdn.trustindex.io https://www.google.com https://maps.google.com';
+        $connectSrc .= ' https://cdn.trustindex.io https://www.google.com';
+        $styleSrc .= ' https://cdn.trustindex.io';
+    }
+    $csp = "default-src 'self'; img-src {$imgSrc}; style-src {$styleSrc}; script-src {$scriptSrc}; frame-src {$frameSrc}; connect-src {$connectSrc}; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'";
     if (is_https_request($config)) {
         $csp .= '; upgrade-insecure-requests';
     }
@@ -62,7 +76,7 @@ function page_error(string $title, string $message): string
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>' . e($title) . '</title>
-  <link rel="stylesheet" href="/css/style.min.css?v=69">
+  <link rel="stylesheet" href="/css/style.min.css?v=70">
 </head>
 <body>
   <main class="wrap narrow">

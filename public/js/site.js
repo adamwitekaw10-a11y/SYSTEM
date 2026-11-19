@@ -241,6 +241,61 @@ if (cookieBanner && cookieAccept) {
   });
 }
 
+/* Google reviews widget — load after explicit click (RODO); scripts from <template> re-created so they execute */
+const mountReviewsEmbed = (box) => {
+  if (!box || box.classList.contains("is-loaded")) return;
+  const template = box.querySelector("[data-reviews-template]");
+  if (!(template instanceof HTMLTemplateElement)) return;
+  const fragment = template.content.cloneNode(true);
+  const host = document.createElement("div");
+  host.className = "reviews-embed-host";
+  const scripts = [];
+  fragment.querySelectorAll("script").forEach((oldScript) => {
+    const script = document.createElement("script");
+    for (const attr of oldScript.attributes) {
+      script.setAttribute(attr.name, attr.value);
+    }
+    if (oldScript.textContent) script.textContent = oldScript.textContent;
+    scripts.push(script);
+    oldScript.remove();
+  });
+  host.appendChild(fragment);
+  const prompt = box.querySelector(".reviews-embed-prompt");
+  if (prompt) prompt.remove();
+  box.appendChild(host);
+  scripts.forEach((script) => host.appendChild(script));
+  box.classList.add("is-loaded");
+};
+
+document.querySelectorAll("[data-reviews-embed]").forEach((box) => {
+  const button = box.querySelector("[data-reviews-load]");
+  if (button) {
+    button.addEventListener("click", () => mountReviewsEmbed(box));
+  }
+  // Po zamknięciu banera cookies — opcjonalnie dociągnij przy wejściu w viewport (nadal bez auto przed interakcją z banerem).
+  const tryLazy = () => {
+    let seen = false;
+    try {
+      seen = window.localStorage.getItem(COOKIE_NOTICE_KEY) === "1";
+    } catch {
+      seen = false;
+    }
+    if (!seen || box.classList.contains("is-loaded")) return;
+    if (!("IntersectionObserver" in window)) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        // Nie auto-ładuj skryptu zewnętrznego — tylko podświetl CTA; klik nadal wymagany.
+        button?.focus({ preventScroll: true });
+      },
+      { rootMargin: "120px 0px", threshold: 0.15 },
+    );
+    observer.observe(box);
+  };
+  tryLazy();
+});
+
 /* Google Maps — load only after explicit click */
 document.querySelectorAll("[data-map-embed]").forEach((box) => {
   const button = box.querySelector("[data-map-load]");

@@ -1,0 +1,12 @@
+<!--
+  Skopiuj ten plik jako data/google-reviews.html i wklej kod widgetu Trustindex
+  (lub innego darmowego embedu opinii Google).
+
+  Albo ustaw w config.php:
+    'google_reviews_embed' => '<div>...</div><script src="https://cdn.trustindex.io/..." defer></script>',
+
+  Albo env GOOGLE_REVIEWS_EMBED.
+
+  Nie wklejaj fikcyjnych opinii ani ręcznej oceny — tylko oficjalny kod widgetu.
+  Widget na stronie ładuje się dopiero po kliknięciu „Pokaż opinie Google”.
+-->

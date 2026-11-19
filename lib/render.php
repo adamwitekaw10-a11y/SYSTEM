@@ -123,7 +123,7 @@ function render_cookie_banner(): string
 {
     return '<div class="cookie-banner" data-cookie-banner hidden>
     <div class="wrap cookie-banner-inner">
-      <p>Używamy niezbędnego cookie sesji (<code>sid</code>) do działania formularzy i logowania. Mapę Google na stronie kontaktu ładujemy dopiero po Twoim kliknięciu. Szczegóły: <a href="/polityka-prywatnosci">polityka prywatności</a> i <a href="/polityka-cookies">polityka cookies</a>.</p>
+      <p>Używamy niezbędnego cookie sesji (<code>sid</code>) do działania formularzy i logowania. Mapę Google oraz opcjonalny widget opinii ładujemy dopiero po Twoim kliknięciu. Szczegóły: <a href="/polityka-prywatnosci">polityka prywatności</a> i <a href="/polityka-cookies">polityka cookies</a>.</p>
       <button type="button" class="button cookie-banner-accept" data-cookie-accept>Rozumiem</button>
     </div>
   </div>';
@@ -297,7 +297,7 @@ function layout(array $opts): string
   <link rel="alternate icon" href="/img/ico.jpg" type="image/jpeg">
   <link rel="apple-touch-icon" href="/img/ico.jpg">
   ' . $preloadLinks . '
-  <link rel="stylesheet" href="/css/style.min.css?v=69">
+  <link rel="stylesheet" href="/css/style.min.css?v=70">
   <script type="application/ld+json">' . $jsonLd . '</script>
 </head>
 <body>
@@ -323,7 +323,7 @@ function layout(array $opts): string
   ' . render_footer_cta($active) . '
   ' . render_site_footer(is_string($sessionUser) ? $sessionUser : null) . '
   ' . render_cookie_banner() . '
-  <script src="/js/site.js?v=20" defer></script>
+  <script src="/js/site.js?v=21" defer></script>
 </body>
 </html>';
 }
@@ -617,7 +617,8 @@ function render_home(array $ctx): string
           <ul class="benefit-grid">' . $benefitsHtml . '</ul>
         </div>
       </div>
-    </section>';
+    </section>
+    ' . render_google_reviews_section($ctx) . '';
 
     return layout(array_merge($ctx, [
         'title' => 'Księgowość Biuro AS - Biuro Rachunkowe Nowy Sącz',
@@ -640,6 +641,72 @@ function render_home(array $ctx): string
             ],
         ],
     ]));
+}
+
+/**
+ * Sekcja opinii Google na home — bez fikcyjnych recenzji / ocen.
+ * Embed (Trustindex itd.) tylko z config / data/google-reviews.html; lazy + po zauważeniu cookies.
+ */
+function render_google_reviews_section(array $ctx = []): string
+{
+    $embed = resolve_google_reviews_embed();
+    $hasEmbed = $embed !== '';
+    $share = GOOGLE_REVIEWS_SHARE_URL;
+    $googleMark = '<span class="reviews-google-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="20" height="20" focusable="false">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+    </span>';
+    $stars = '<span class="reviews-stars" aria-hidden="true">'
+        . str_repeat('<span class="reviews-star">★</span>', 5)
+        . '</span>';
+
+    $slot = '';
+    if ($hasEmbed) {
+        $slot = '<div class="reviews-embed" data-reviews-embed>
+      <div class="reviews-embed-prompt">
+        <p>Widget opinii Google ładuje zewnętrzny skrypt (np. Trustindex). Po kliknięciu mogą być przetwarzane dane techniczne zgodnie z polityką dostawcy i Google.</p>
+        <button type="button" class="button reviews-embed-load" data-reviews-load>Pokaż opinie Google</button>
+        <p class="reviews-embed-note"><a href="/polityka-prywatnosci">Polityka prywatności</a> · <a href="/polityka-cookies">Cookies</a></p>
+      </div>
+      <template data-reviews-template>' . $embed . '</template>
+    </div>';
+    } else {
+        $cards = '';
+        for ($i = 0; $i < 3; $i++) {
+            $cards .= '<div class="reviews-card reviews-card--shell" aria-hidden="true">
+        <div class="reviews-card-top">' . $googleMark . $stars . '</div>
+        <p class="reviews-card-shell-line"></p>
+        <p class="reviews-card-shell-line reviews-card-shell-line--short"></p>
+      </div>';
+        }
+        $slot = '<div class="reviews-placeholder">
+      <div class="reviews-rating-row" aria-hidden="true">
+        ' . $googleMark . '
+        <span class="reviews-rating-dash">—</span>
+        ' . $stars . '
+      </div>
+      <p class="reviews-placeholder-note">Opinie klientów zobaczysz w wizytówce Google. Na stronie możesz później osadzić darmowy widget (np. Trustindex).</p>
+      <div class="reviews-cards" aria-hidden="true">' . $cards . '</div>
+    </div>';
+    }
+
+    return '<section class="reviews" aria-labelledby="reviews-heading" data-reviews-section' . ($hasEmbed ? ' data-reviews-has-embed' : '') . '>
+    <div class="wrap reviews-inner">
+      <div class="reviews-intro">
+        <p class="eyebrow">Opinie Google</p>
+        <h2 id="reviews-heading">Zaufanie potwierdzone opiniami klientów</h2>
+        <p class="reviews-sub">Poznaj doświadczenia przedsiębiorców, którzy powierzyli nam swoją księgowość.</p>
+      </div>
+      ' . $slot . '
+      <p class="reviews-cta">
+        <a class="button reviews-cta-btn" href="' . e($share) . '" target="_blank" rel="noopener noreferrer">Zobacz wszystkie opinie w Google <span aria-hidden="true">→</span></a>
+      </p>
+    </div>
+  </section>';
 }
 
 function render_about(array $ctx): string
@@ -1128,6 +1195,7 @@ function render_privacy(array $ctx): string
       <p>Strona używa niezbędnego cookie sesji <code>sid</code> (HttpOnly, SameSite=Lax). Szczegóły: <a href="/polityka-cookies">polityka cookies</a>.</p>
       <h2>Mapa Google</h2>
       <p>Na stronie <a href="/kontakt">Kontakt</a> mapa Google Maps nie ładuje się automatycznie. Dopiero po kliknięciu „Pokaż mapę” przeglądarka łączy się z serwerami Google, które mogą przetwarzać adres IP i inne dane techniczne oraz ustawiać własne cookies zgodnie z polityką Google.</p>
+      <p>Na stronie głównej opcjonalny widget opinii Google (np. Trustindex) również nie ładuje się automatycznie — dopiero po kliknięciu „Pokaż opinie Google”. Wtedy przeglądarka może połączyć się z serwerami dostawcy widgetu oraz Google (m.in. treści opinii i zasoby graficzne). Nie publikujemy na stronie fikcyjnych opinii ani sztucznej oceny w danych strukturalnych.</p>
       <h2>Odbiorcy danych</h2>
       <p>Dane mogą być powierzane podmiotom obsługującym hosting lub infrastrukturę IT, wyłącznie w zakresie niezbędnym do działania serwisu. Przy załadowaniu mapy odbiorcą danych technicznych staje się Google.</p>
       <h2>Okres przechowywania</h2>
@@ -1175,7 +1243,7 @@ function render_cookies(array $ctx): string
       <h2>Preferencja banera</h2>
       <p>Po kliknięciu „Rozumiem” w banerze informacyjnym zapisujemy w <code>localStorage</code> przeglądarki informację, że komunikat został zamknięty. Nie jest to cookie HTTP i nie służy do śledzenia.</p>
       <h2>Cookies / dane podmiotów trzecich</h2>
-      <p>Nie używamy narzędzi analitycznych ani reklamowych. Jedynym treścią zewnętrzną jest opcjonalna mapa Google na stronie kontaktu — ładowana dopiero po kliknięciu „Pokaż mapę”. Wtedy Google może ustawić własne cookies i przetwarzać dane zgodnie ze swoimi zasadami.</p>
+      <p>Nie używamy narzędzi analitycznych ani reklamowych. Treści zewnętrzne ładujemy dopiero po Twoim kliknięciu: mapa Google na stronie kontaktu („Pokaż mapę”) oraz — jeśli skonfigurowany — widget opinii Google na stronie głównej („Pokaż opinie Google”, np. Trustindex). Wtedy Google lub dostawca widgetu może ustawić własne cookies i przetwarzać dane zgodnie ze swoimi zasadami.</p>
       <h2>Zarządzanie</h2>
       <p>Cookies można usuwać lub blokować w ustawieniach przeglądarki. Zablokowanie <code>sid</code> uniemożliwi logowanie do edycji cennika. Mapę można po prostu nie uruchamiać.</p>
       <p>Więcej o przetwarzaniu danych: <a href="/polityka-prywatnosci">polityka prywatności</a>.</p>

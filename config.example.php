@@ -31,4 +31,9 @@ return [
 
     // Opcjonalna ścieżka do pliku danych (sqlite lub json). Puste = data/ w katalogu aplikacji.
     'data_path' => '',
+
+    // Embed darmowego widgetu opinii Google (np. Trustindex). Puste = placeholder + CTA do wizytówki.
+    // Alternatywy: plik data/google-reviews.html albo env GOOGLE_REVIEWS_EMBED.
+    // Nie wklejaj fikcyjnych opinii — tylko oficjalny kod widgetu.
+    'google_reviews_embed' => '',
 ];
