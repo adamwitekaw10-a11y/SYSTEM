@@ -76,7 +76,7 @@ function page_error(string $title, string $message): string
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>' . e($title) . '</title>
-  <link rel="stylesheet" href="/css/style.min.css?v=70">
+  <link rel="stylesheet" href="/css/style.min.css?v=71">
 </head>
 <body>
   <main class="wrap narrow">

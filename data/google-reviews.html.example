@@ -8,5 +8,11 @@
   Albo env GOOGLE_REVIEWS_EMBED.
 
   Nie wklejaj fikcyjnych opinii ani ręcznej oceny — tylko oficjalny kod widgetu.
-  Widget na stronie ładuje się dopiero po kliknięciu „Pokaż opinie Google”.
+  Widget ładuje się leniwie, gdy sekcja opinii wchodzi w widok (IntersectionObserver).
+
+  Skąd wziąć kod Trustindex (skrót):
+  1. Załóż darmowe konto na https://www.trustindex.io/
+  2. Połącz wizytówkę Google (Biuro Rachunkowe AS / share.google/…)
+  3. Widgets → wybierz layout (np. karuzela / 3 karty) → Copy embed code
+  4. Wklej HTML tutaj lub do config.php / env
 -->

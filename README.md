@@ -32,7 +32,7 @@ Logowanie: `/logowanie` (użytkownik `admin`).
 
 Po zalogowaniu: `/admin` (oferta, cennik, kontakt, konto). Edytor oferty: TinyMCE w `public/vendor/tinymce`.
 
-Opinie Google na home: sekcja z CTA do wizytówki. Aby pokazać widget (Trustindex itd.), wklej kod do `config.php` (`google_reviews_embed`), `data/google-reviews.html` (wzorzec: `data/google-reviews.html.example`) albo env `GOOGLE_REVIEWS_EMBED`. Bez embedu jest placeholder bez fikcyjnych opinii. Widget ładuje się dopiero po kliknięciu „Pokaż opinie Google”.
+Opinie Google na home: sekcja z CTA do wizytówki. Aby pokazać widget (Trustindex itd.), wklej kod do `config.php` (`google_reviews_embed`), `data/google-reviews.html` (wzorzec: `data/google-reviews.html.example`) albo env `GOOGLE_REVIEWS_EMBED`. Bez embedu jest placeholder bez fikcyjnych opinii. Gdy embed jest ustawiony, widget ładuje się leniwie (IntersectionObserver) przy przewinięciu do sekcji.
 
 ## FTP / ALTe
 

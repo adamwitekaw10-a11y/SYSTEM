@@ -241,7 +241,7 @@ if (cookieBanner && cookieAccept) {
   });
 }
 
-/* Google reviews widget — load after explicit click (RODO); scripts from <template> re-created so they execute */
+/* Google reviews widget — auto-mount when section nears viewport (scripts from <template> re-created) */
 const mountReviewsEmbed = (box) => {
   if (!box || box.classList.contains("is-loaded")) return;
   const template = box.querySelector("[data-reviews-template]");
@@ -260,40 +260,27 @@ const mountReviewsEmbed = (box) => {
     oldScript.remove();
   });
   host.appendChild(fragment);
-  const prompt = box.querySelector(".reviews-embed-prompt");
-  if (prompt) prompt.remove();
+  const status = box.querySelector("[data-reviews-status]");
+  if (status) status.remove();
   box.appendChild(host);
   scripts.forEach((script) => host.appendChild(script));
   box.classList.add("is-loaded");
 };
 
 document.querySelectorAll("[data-reviews-embed]").forEach((box) => {
-  const button = box.querySelector("[data-reviews-load]");
-  if (button) {
-    button.addEventListener("click", () => mountReviewsEmbed(box));
+  if (!("IntersectionObserver" in window)) {
+    mountReviewsEmbed(box);
+    return;
   }
-  // Po zamknięciu banera cookies — opcjonalnie dociągnij przy wejściu w viewport (nadal bez auto przed interakcją z banerem).
-  const tryLazy = () => {
-    let seen = false;
-    try {
-      seen = window.localStorage.getItem(COOKIE_NOTICE_KEY) === "1";
-    } catch {
-      seen = false;
-    }
-    if (!seen || box.classList.contains("is-loaded")) return;
-    if (!("IntersectionObserver" in window)) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        observer.disconnect();
-        // Nie auto-ładuj skryptu zewnętrznego — tylko podświetl CTA; klik nadal wymagany.
-        button?.focus({ preventScroll: true });
-      },
-      { rootMargin: "120px 0px", threshold: 0.15 },
-    );
-    observer.observe(box);
-  };
-  tryLazy();
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      mountReviewsEmbed(box);
+    },
+    { rootMargin: "200px 0px", threshold: 0.05 },
+  );
+  observer.observe(box);
 });
 
 /* Google Maps — load only after explicit click */
